@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Amir Gómez — Demand Calibration</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<!--
+  AMIR GÓMEZ — sitio construido con Innovatron desde el concepto.
+  Concepto: la demanda entra caótica, el sistema de Amir la calibra en señal limpia.
+  Objeto Eje (caos→orden): partículas ámbar turbulentas arriba (demanda cruda) que se
+  alinean en un flujo cian abajo (señal). El scroll ES el proceso de calibración.
+-->
+<style>
+  :root{
+    --ease:cubic-bezier(0.16,1,0.3,1);
+    --bg:#050608; --fg:#f2efe9; --muted:#7d8a86;
+    --amber:#ff8c26; --cyan:#4dffd0;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{-webkit-font-smoothing:antialiased}
+  body{background:var(--bg);color:var(--fg);font-family:'Space Grotesk',system-ui,sans-serif;overflow-x:hidden}
+  .mono{font-family:'Space Mono',monospace;font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;color:var(--muted)}
+  #gl{position:fixed;inset:0;z-index:0;display:block}
+  /* scrim: oscurece la izquierda (donde vive el texto) para legibilidad, sin tapar el efecto */
+  .scrim{position:fixed;inset:0;z-index:1;pointer-events:none;
+    background:linear-gradient(100deg, rgba(5,6,8,.92) 0%, rgba(5,6,8,.6) 28%, rgba(5,6,8,.05) 55%, transparent 70%)}
+  .grain{position:fixed;inset:-50%;z-index:2;pointer-events:none;opacity:.05;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");animation:grain 8s steps(6) infinite}
+  @keyframes grain{0%,100%{transform:translate(0,0)}25%{transform:translate(-4%,3%)}50%{transform:translate(3%,-3%)}75%{transform:translate(-2%,4%)}}
+
+  /* ---- Haze de cursor: sigue al mouse, refuerza el "haze" que ya gustaba del hero ---- */
+  .cursor-haze{position:fixed;top:0;left:0;width:46vw;height:46vw;max-width:640px;max-height:640px;z-index:2;
+    pointer-events:none;transform:translate(-50%,-50%);border-radius:50%;mix-blend-mode:screen;opacity:0;
+    background:radial-gradient(circle,rgba(77,255,208,.16) 0%,rgba(255,140,38,.08) 42%,transparent 72%);
+    transition:opacity .5s var(--ease)}
+  .cursor-haze.on{opacity:1}
+  @media(pointer:coarse){.cursor-haze{display:none}}
+
+  /* ---- Cursor con cuerpo + label contextual (el Sello Innovatron) ---- */
+  .cursor{position:fixed;top:0;left:0;z-index:70;pointer-events:none;mix-blend-mode:difference;
+    width:10px;height:10px;border-radius:50%;background:var(--fg);transform:translate(-50%,-50%);
+    transition:width .35s var(--ease),height .35s var(--ease)}
+  .cursor.big{width:76px;height:76px}
+  .cursor__label{position:absolute;inset:0;display:grid;place-items:center;color:var(--bg);
+    font-family:'Space Mono',monospace;font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;
+    opacity:0;transition:opacity .3s}
+  .cursor.big .cursor__label{opacity:1}
+  @media(pointer:coarse){.cursor{display:none}}
+
+  .content{position:relative;z-index:3;pointer-events:none}
+  .content a{pointer-events:auto}
+  nav{position:fixed;top:0;left:0;width:100%;z-index:60;display:flex;justify-content:space-between;align-items:center;
+    padding:1.6rem 6vw;mix-blend-mode:difference}
+  nav .brand{font-weight:700;letter-spacing:.02em;font-size:1rem}
+  nav .links{display:flex;gap:2.2rem}
+  nav .links a{position:relative;color:var(--fg);text-decoration:none;font-family:'Space Mono',monospace;
+    font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;padding-bottom:.25rem}
+  nav .links a::after{content:'';position:absolute;left:0;bottom:0;width:100%;height:1px;background:var(--cyan);
+    transform:scaleX(0);transform-origin:left;transition:transform .4s var(--ease)}
+  nav .links a:hover::after{transform:scaleX(1)}
+  nav .links a:hover{color:var(--cyan)}
+
+  .hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:0 6vw}
+  .hero .eyebrow{margin-bottom:1.6rem}
+  .hero h1{font-weight:700;letter-spacing:-.035em;line-height:.92;font-size:clamp(3rem,10.5vw,11rem);max-width:15ch}
+  .hero h1 .cy{color:var(--cyan)}
+  .hero p.sub{max-width:33ch;margin-top:2rem;color:#c4ccc9;font-size:clamp(1rem,1.3vw,1.2rem);line-height:1.55}
+  .cta{position:relative;display:inline-flex;align-items:center;gap:.7rem;margin-top:2.6rem;padding:1rem 1.8rem;
+    border-radius:2rem;background:var(--amber);color:#1a0d02;font-weight:700;text-decoration:none;font-size:.95rem;
+    width:max-content;overflow:hidden;isolation:isolate;
+    transition:transform .5s var(--ease),box-shadow .5s var(--ease)}
+  .cta::before{content:'';position:absolute;inset:0;z-index:-1;background:var(--cyan);
+    transform:translateX(-100%);transition:transform .5s var(--ease)}
+  .cta:hover{transform:translateY(-3px) scale(1.03);box-shadow:0 12px 34px -8px rgba(77,255,208,.55)}
+  .cta:hover::before{transform:translateX(0)}
+  .cta:active{transform:translateY(-1px) scale(.98)}
+  .cta svg,.cta span{position:relative}
+  .cta .arrow{display:inline-block;transition:transform .4s var(--ease)}
+  .cta:hover .arrow{transform:translateX(5px)}
+  .scroll-cue{position:fixed;bottom:1.6rem;left:50%;transform:translateX(-50%);z-index:60}
+
+  /* ---- Método: 5 etapas. El texto es DOM (accesible/SEO) pero se ANCLA cada frame al borde
+     proyectado de su placa 3D — texto+placa deben leerse como UNA sola pieza, no dos objetos
+     separados. Por eso es position:fixed y su transform lo pone JS (dockStageCopies()). ---- */
+  .stage{min-height:100vh}
+  .stage-copy{position:fixed;top:0;left:0;z-index:55;width:min(26ch,84vw);opacity:0;pointer-events:none;
+    will-change:transform,opacity;transition:opacity .6s var(--ease),box-shadow .5s var(--ease),border-color .5s var(--ease);
+    background:linear-gradient(160deg,rgba(255,255,255,.055),rgba(255,255,255,.012));
+    backdrop-filter:blur(16px) saturate(1.3);-webkit-backdrop-filter:blur(16px) saturate(1.3);
+    border:1px solid rgba(255,255,255,.09);border-radius:1.2rem;padding:1.8rem 2rem;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.14), 0 30px 60px -20px rgba(0,0,0,.6)}
+  .stage-copy.active{pointer-events:auto}
+  .stage-copy.dock-right{text-align:right}
+  .stage-copy:hover{border-color:rgba(77,255,208,.4);box-shadow:inset 0 1px 0 rgba(255,255,255,.2), 0 0 40px -6px rgba(77,255,208,.35)}
+  .stage-num{font-size:.8rem;color:var(--muted);margin-bottom:.9rem;display:block}
+  .stage-copy h2{font-size:clamp(1.8rem,4vw,3.2rem);font-weight:700;letter-spacing:-.02em;line-height:1.05;margin-bottom:1rem}
+  .stage-copy p{color:#aab3af;font-size:1rem;line-height:1.55}
+  .stage-tag{display:inline-block;margin-bottom:.6rem;padding:.3rem .8rem;border-radius:1rem;font-size:.65rem;
+    letter-spacing:.12em;text-transform:uppercase}
+
+  @media(prefers-reduced-motion:reduce){.grain{animation:none}.stage-copy{opacity:1;transform:none;transition:none}}
+</style>
+</head>
+<body>
+  <canvas id="gl" aria-hidden="true"></canvas>
+  <div class="scrim" aria-hidden="true"></div>
+  <div class="cursor-haze" aria-hidden="true"></div>
+  <div class="grain" aria-hidden="true"></div>
+  <div class="cursor" aria-hidden="true"><span class="cursor__label"></span></div>
+
+  <div class="content">
+    <nav>
+      <span class="brand">AMIR GÓMEZ</span>
+      <span class="links">
+        <a href="#method" data-cursor-label="view">Method</a><a href="#work" data-cursor-label="view">Work</a><a href="#signal" data-cursor-label="view">Signal</a><a href="#contact" data-cursor-label="go">Contact</a>
+      </span>
+    </nav>
+
+    <header class="hero">
+      <span class="mono eyebrow">Demand calibration system</span>
+      <h1>Calibrate demand<br>before you<br><span class="cy">scale spend.</span></h1>
+      <p class="sub">Amir turns scattered paid media, funnels and analytics into one clean, measurable acquisition signal — so budget only grows where the signal stays sharp.</p>
+      <a class="cta" href="#contact" data-cursor-label="audit"><span>Request a signal audit</span><span class="arrow">→</span></a>
+    </header>
+    <span class="mono scroll-cue">scroll to calibrate ↓</span>
+
+    <section id="method" aria-label="Method">
+      <div class="stage" data-stage="0">
+        <div class="stage-copy">
+          <span class="stage-num mono">01 / 05</span>
+          <span class="stage-tag" style="background:#ff8c2622;color:#ffab5e">Traffic</span>
+          <h2>Demand enters the system.</h2>
+          <p>Search and paid social bring in raw, unqualified attention — the chaos before calibration.</p>
+        </div>
+      </div>
+      <div class="stage" data-stage="1">
+        <div class="stage-copy dock-right">
+          <span class="stage-num mono">02 / 05</span>
+          <span class="stage-tag" style="background:#ffb45622;color:#ffc98a">Offer</span>
+          <h2>Message and economics compress.</h2>
+          <p>Positioning, pricing and audience tension get resolved before a single dollar scales.</p>
+        </div>
+      </div>
+      <div class="stage" data-stage="2">
+        <div class="stage-copy">
+          <span class="stage-num mono">03 / 05</span>
+          <span class="stage-tag" style="background:#37e7c422;color:#7ff2df">Surface</span>
+          <h2>Friction is removed from the surface.</h2>
+          <p>Landing pages and funnels are treated as one measurable conversion instrument.</p>
+        </div>
+      </div>
+      <div class="stage" data-stage="3">
+        <div class="stage-copy dock-right">
+          <span class="stage-num mono">04 / 05</span>
+          <span class="stage-tag" style="background:#4dffd022;color:#9dffe8">Loop</span>
+          <h2>Intent is recovered, not rebought.</h2>
+          <p>Email, retention and retargeting close the loop on demand that already showed interest.</p>
+        </div>
+      </div>
+      <div class="stage" data-stage="4">
+        <div class="stage-copy">
+          <span class="stage-num mono">05 / 05</span>
+          <span class="stage-tag" style="background:#4dffd033;color:#c7fff3">Signal</span>
+          <h2>The signal tells you what's next.</h2>
+          <p>Clean attribution shows exactly where to cut, fix, or pressurize spend.</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script type="importmap">
+  { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }
+  </script>
+  <script type="module">
+  import * as THREE from 'three';
+  import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+  import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+  import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+  import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+  import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+
+  const REDUCE=matchMedia('(prefers-reduced-motion:reduce)').matches;
+  const TOUCH=matchMedia('(pointer:coarse)').matches;
+  const DEBUG_LOWTIER=new URLSearchParams(location.search).has('lowtier'); // solo para verificación, no producción
+  if(new URLSearchParams(location.search).has('onlygl')){    // debug: oculta el DOM para ver el render 3D puro
+    const s=document.createElement('style'); s.textContent='.content,.scrim{display:none!important}';
+    document.head.appendChild(s);
+  }
+  const TIER=(()=>{
+    if(DEBUG_LOWTIER) return{dpr:1,count:600};
+    const small=Math.min(screen.width,screen.height)<760;
+    if(small) return{dpr:Math.min(devicePixelRatio,1),count:5000};
+    if(TOUCH) return{dpr:Math.min(devicePixelRatio,1.25),count:8000};
+    return{dpr:Math.min(devicePixelRatio,1.5),count:9000};})();
+
+  const canvas=document.getElementById('gl');
+  const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+  renderer.setPixelRatio(TIER.dpr); renderer.setClearColor(0x050608,1);
+  renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=0.9;
+  const scene=new THREE.Scene();
+  const camera=new THREE.PerspectiveCamera(46,innerWidth/innerHeight,0.1,100); camera.position.set(0,0,9);
+
+  // ---- Las 5 etapas del Método + la curva del hilo de señal (definidas ANTES de las partículas:
+  // el campo de partículas ahora SIGUE esta misma curva, en vez de vivir solo en el hero) ----
+  const STAGES=[
+    {y:-8,  x:-1.7, color:0xff8c26},  // Traffic
+    {y:-14, x: 1.9, color:0xffb456},  // Offer
+    {y:-20, x:-1.7, color:0x37e7c4},  // Surface
+    {y:-26, x: 1.9, color:0x4dffd0},  // Loop
+    {y:-32, x:-1.4, color:0x9dffe8},  // Signal
+  ];
+  const threadPts=[new THREE.Vector3(0,5.5,-0.4)];
+  STAGES.forEach(s=>threadPts.push(new THREE.Vector3(s.x*0.5, s.y, -0.4)));
+  threadPts.push(new THREE.Vector3(STAGES.at(-1).x*0.5, STAGES.at(-1).y-4, -0.4));
+  const threadCurve=new THREE.CatmullRomCurve3(threadPts);
+  const TUBE_TOP=5.5, TUBE_BOTTOM=STAGES.at(-1).y-4;
+
+  // ---- Objeto Eje: partículas que ENVUELVEN el hilo entero (hero→última placa) y giran LOCALMENTE
+  // con él (Rodrigues alrededor de la tangente) — no un giro global del grupo, que "swingearía". ----
+  const N=TIER.count;
+  const center=new Float32Array(N*3), basisA=new Float32Array(N*3), basisB=new Float32Array(N*3);
+  const chaosOff=new Float32Array(N*3), angle=new Float32Array(N), rnd=new Float32Array(N);
+  const _up=new THREE.Vector3(0,1,0), _alt=new THREE.Vector3(1,0,0);
+  const _p=new THREE.Vector3(), _tan=new THREE.Vector3(), _bin=new THREE.Vector3(), _nrm=new THREE.Vector3();
+  for(let i=0;i<N;i++){
+    const t=i/(N-1);
+    threadCurve.getPointAt(t,_p); threadCurve.getTangentAt(t,_tan);
+    const useUp=Math.abs(_tan.dot(_up))>0.98?_alt:_up;
+    _bin.crossVectors(useUp,_tan).normalize();
+    _nrm.crossVectors(_tan,_bin);
+    const radius=0.55-t*0.32;                        // se angosta: nube ancha arriba → señal fina abajo
+    center[i*3]=_p.x; center[i*3+1]=_p.y; center[i*3+2]=_p.z;
+    basisA[i*3]=_nrm.x*radius; basisA[i*3+1]=_nrm.y*radius; basisA[i*3+2]=_nrm.z*radius;
+    basisB[i*3]=_bin.x*radius; basisB[i*3+1]=_bin.y*radius; basisB[i*3+2]=_bin.z*radius;
+    angle[i]=(i%23)*0.27+t*Math.PI*6;
+    // CAÓTICO: jitter ancho alrededor del MISMO centro (nunca alrededor del origen del mundo)
+    const cr=(1.4+Math.random()*2.6)*(1.25-t*0.8);
+    const ca=Math.random()*Math.PI*2, cz=(Math.random()-0.5)*Math.PI;
+    chaosOff[i*3]  =Math.cos(ca)*Math.cos(cz)*cr;
+    chaosOff[i*3+1]=Math.sin(cz)*cr*0.65;
+    chaosOff[i*3+2]=Math.sin(ca)*Math.cos(cz)*cr;
+    rnd[i]=Math.random();
+  }
+  const geo=new THREE.BufferGeometry();
+  geo.setAttribute('position',new THREE.BufferAttribute(center.slice(),3));
+  geo.setAttribute('aCenter',new THREE.BufferAttribute(center,3));
+  geo.setAttribute('aBasisA',new THREE.BufferAttribute(basisA,3));
+  geo.setAttribute('aBasisB',new THREE.BufferAttribute(basisB,3));
+  geo.setAttribute('aChaosOff',new THREE.BufferAttribute(chaosOff,3));
+  geo.setAttribute('aAngle',new THREE.BufferAttribute(angle,1));
+  geo.setAttribute('aRnd',new THREE.BufferAttribute(rnd,1));
+
+  const uniforms={ uTime:{value:0}, uOrder:{value:0.0}, uMouse:{value:new THREE.Vector3(99,99,99)}, uForce:{value:0} };
+  const uSpin={value:0.5}, uTop={value:TUBE_TOP}, uSpan={value:TUBE_TOP-TUBE_BOTTOM};
+  const mat=new THREE.ShaderMaterial({ uniforms:Object.assign(uniforms,{uSpin,uTop,uSpan}), transparent:true, depthWrite:false, blending:THREE.NormalBlending,
+    vertexShader:`
+      uniform float uTime,uOrder,uSpin,uTop,uSpan; uniform vec3 uMouse; uniform float uForce;
+      attribute vec3 aCenter,aBasisA,aBasisB,aChaosOff; attribute float aAngle,aRnd; varying float vOrder;
+      float hash(vec3 p){ return fract(sin(dot(p,vec3(127.1,311.7,74.7)))*43758.5); }
+      float noise(vec3 p){ vec3 i=floor(p),f=fract(p); f=f*f*(3.-2.*f);
+        float n=mix(mix(mix(hash(i),hash(i+vec3(1,0,0)),f.x),mix(hash(i+vec3(0,1,0)),hash(i+vec3(1,1,0)),f.x),f.y),
+                    mix(mix(hash(i+vec3(0,0,1)),hash(i+vec3(1,0,1)),f.x),mix(hash(i+vec3(0,1,1)),hash(i+vec3(1,1,1)),f.x),f.y),f.z);
+        return n; }
+      vec3 curl(vec3 p){ float e=0.2;
+        float x=noise(p+vec3(0,e,0))-noise(p-vec3(0,e,0));
+        float y=noise(p+vec3(0,0,e))-noise(p-vec3(0,0,e));
+        float z=noise(p+vec3(e,0,0))-noise(p-vec3(e,0,0));
+        return normalize(vec3(y-z,z-x,x-y)+1e-4); }
+      void main(){
+        float yN=(aCenter.y-(uTop-uSpan))/uSpan;         // 0 en la última placa, 1 en el hero
+        float order=clamp(uOrder*1.5 - yN*0.9 + 0.35, 0.0, 1.0);  // abajo (yN chico) se ordena primero
+        vOrder=order;
+        // ORDENADO: gira LOCALMENTE alrededor de la tangente del hilo — acompaña el tubo entero
+        float ang=aAngle+uTime*uSpin;
+        vec3 orderedPos=aCenter+aBasisA*cos(ang)+aBasisB*sin(ang);
+        // CAÓTICO: jitter ancho alrededor del MISMO centro (nunca del origen del mundo)
+        vec3 turb=curl(aCenter*0.22+uTime*0.08)*1.6;
+        vec3 chaosPos=aCenter+aChaosOff+turb;
+        vec3 pos=mix(chaosPos, orderedPos, order);
+        // empuje sutil del cursor
+        vec3 tm=pos-uMouse; float d=length(tm);
+        pos+=normalize(tm+1e-4)*uForce*smoothstep(2.6,0.0,d);
+        vec4 mv=modelViewMatrix*vec4(pos,1.0);
+        gl_PointSize=(aRnd*1.0+0.35)*(52.0/-mv.z)*(0.6+order*0.6);
+        gl_Position=projectionMatrix*mv;
+      }`,
+    fragmentShader:`
+      varying float vOrder;
+      void main(){
+        vec2 uv=gl_PointCoord-0.5; float d=length(uv);
+        if(d>0.5) discard;
+        float a=smoothstep(0.5,0.0,d);
+        vec3 amber=vec3(1.0,0.55,0.14);   // demanda cruda
+        vec3 cyan=vec3(0.30,1.0,0.85);    // señal calibrada
+        gl_FragColor=vec4(mix(amber,cyan,vOrder), a*0.9);  // normal blending: el color se mantiene, no lava
+      }`});
+  const points=new THREE.Points(geo,mat); scene.add(points);
+
+  // ---- Placas del Método: frostGlass (matcap+fresnel, NO transmission real) ----
+  // Nota: 5x MeshPhysicalMaterial{transmission} obliga a un render-pass extra del fondo POR PLACA
+  // — carísimo (verificado: cuelga el render). frostGlass es 1 sola pasada, mismo look "frosted".
+  function makeMatcap(){
+    const c=document.createElement('canvas'); c.width=c.height=256; const x=c.getContext('2d');
+    const g=x.createRadialGradient(128,110,18,128,128,150);
+    g.addColorStop(0,'#dfeceb'); g.addColorStop(.42,'#5c7d78'); g.addColorStop(.72,'#16211f'); g.addColorStop(1,'#04070a');
+    x.fillStyle=g; x.fillRect(0,0,256,256);
+    const hi=x.createRadialGradient(94,80,1,94,80,46);
+    hi.addColorStop(0,'rgba(255,255,255,.8)'); hi.addColorStop(.55,'rgba(220,240,235,.25)'); hi.addColorStop(1,'transparent');
+    x.fillStyle=hi; x.fillRect(0,0,256,256);
+    const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; return t;
+  }
+  // frostGlass con REFRACCIÓN vía backdrop compartido: un solo render extra por frame (no uno
+  // por placa — eso fue lo que colgaba antes) captura la escena SIN las placas; cada placa
+  // samplea esa textura con la UV distorsionada por su normal — así se ve de verdad lo que hay
+  // detrás (hilo + partículas), marmolado, como en la referencia (pantalla Xbox), no un tinte plano.
+  // expone uHover (0→1): al apuntar/raycast, el borde se enciende NEÓN en el color de la etapa.
+  function frostGlass(matcap,color){
+    const uHover={value:0};
+    const m=new THREE.MeshMatcapMaterial({matcap,color:0xffffff,transparent:true,opacity:0.6,depthWrite:false});
+    m.onBeforeCompile=(sh)=>{
+      sh.uniforms.uHover=uHover;
+      sh.uniforms.uNeon={value:new THREE.Color(color)};
+      sh.uniforms.tBackdrop={value:null};
+      sh.uniforms.uResolution={value:new THREE.Vector2(1,1)};
+      m.userData.shader=sh;   // guardar referencia para actualizar tBackdrop/uResolution cada frame
+      sh.fragmentShader='uniform float uHover; uniform vec3 uNeon; uniform sampler2D tBackdrop; uniform vec2 uResolution;\n'+sh.fragmentShader;
+      // OJO: en esta versión de three, onBeforeCompile YA recibe los #include resueltos (no el
+      // literal '#include <matcap_fragment>' — verificado volcando el shader real). Hay que
+      // apuntar a la línea final tal cual la resuelve ShaderLib['matcap'], reusando sus var (uv/normal/viewDir).
+      sh.fragmentShader=sh.fragmentShader.replace(
+        'vec3 outgoingLight = diffuseColor.rgb * matcapColor.rgb;',
+        `
+        float fres=pow(1.0-max(dot(normal,viewDir),0.0),2.5);
+        // jitter por píxel: una cara plana tiene normal casi constante → sin esto, TODA la
+        // superficie muestrea el mismo punto del matcap (se ve un rectángulo sólido, no vidrio)
+        float jHash=fract(sin(dot(gl_FragCoord.xy,vec2(12.9898,78.233)))*43758.5453);
+        // refracción falsa: la UV de pantalla se distorsiona con la normal (más en el borde por fresnel)
+        float distortAmt=0.06+fres*0.1;
+        vec2 screenUV=gl_FragCoord.xy/uResolution;
+        vec2 distortedUV=clamp(screenUV+(normal.xy+vec2(jHash-0.5)*0.15)*distortAmt, 0.002, 0.998);
+        vec3 behind=texture2D(tBackdrop,distortedUV).rgb;
+        vec3 outgoingLight=mix(behind, diffuseColor.rgb*matcapColor.rgb, 0.22);  // el fondo domina: se ve lo de atrás
+        outgoingLight+=fres*vec3(0.85,0.95,0.92)*(0.22+uHover*1.4);     // el rim se dispara al hover
+        outgoingLight+=uNeon*uHover*0.7;                                 // baño neón del color de etapa
+        diffuseColor.a=mix(diffuseColor.a,0.92,uHover);                  // más opaca/visible al hover
+        `
+      );
+    };
+    m.userData.uHover=uHover;
+    return m;
+  }
+  const sharedMatcap=makeMatcap();
+  const plateGeo=new RoundedBoxGeometry(3.1,3.8,0.22,4,0.16);
+  const plateMaterials=[];
+  const plates=STAGES.map((s)=>{
+    const material=frostGlass(sharedMatcap,s.color);
+    plateMaterials.push(material);
+    const plate=new THREE.Mesh(plateGeo,material);
+    plate.position.set(s.x, s.y, 0);
+    // acento sutil de color detrás (además de lo que ya se ve del backdrop real)
+    const accent=new THREE.Mesh(new THREE.PlaneGeometry(1.7,2.2),
+      new THREE.MeshBasicMaterial({color:s.color,transparent:true,opacity:0.22,toneMapped:false}));
+    accent.position.set(0,0,-0.35); plate.add(accent);
+    scene.add(plate);
+    return plate;
+  });
+
+  // ---- Backdrop compartido: 1 render extra por frame (sin las placas) que TODAS samplean ----
+  let bgRT=new THREE.WebGLRenderTarget(2,2,{depthBuffer:false});
+  function resizeBgRT(){
+    const w=canvas.width||2, h=canvas.height||2;
+    if(bgRT.width!==w||bgRT.height!==h){ bgRT.setSize(w,h);
+      plateMaterials.forEach(m=>{ if(m.userData.shader) m.userData.shader.uniforms.uResolution.value.set(w,h); }); }
+  }
+  function renderBackdrop(){
+    plates.forEach(p=>p.visible=false);
+    renderer.setRenderTarget(bgRT); renderer.render(scene,camera); renderer.setRenderTarget(null);
+    plates.forEach(p=>p.visible=true);
+    plateMaterials.forEach(m=>{ if(m.userData.shader){ m.userData.shader.uniforms.tBackdrop.value=bgRT.texture;
+      m.userData.shader.uniforms.uResolution.value.set(bgRT.width,bgRT.height); } });
+  }
+
+  // ---- Hilo de señal: reusa la MISMA curva que ya envuelven las partículas (una sola materia) ----
+  // Textura cibernética: dashes que fluyen a lo largo (uv.x=recorrido) + anillos de circuito (uv.y=circunferencia)
+  const threadUniforms={ uTime:{value:0} };
+  const threadMat=new THREE.ShaderMaterial({
+    uniforms:threadUniforms, transparent:true, depthWrite:false, toneMapped:false,
+    vertexShader:`varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+    fragmentShader:`
+      uniform float uTime; varying vec2 vUv;
+      void main(){
+        float dash=step(0.5,fract(vUv.x*46.0-uTime*1.4));           // pulsos que corren hacia abajo (el flujo de señal)
+        float ring=step(0.82,fract(vUv.y*5.0+uTime*0.15));           // anillos de "circuito" alrededor del tubo
+        float base=0.28;
+        float e=base+dash*0.55+ring*0.3;
+        vec3 col=mix(vec3(0.42,0.9,0.82),vec3(0.85,1.0,0.98),dash*0.7+ring*0.4);
+        gl_FragColor=vec4(col*e, clamp(e,0.12,0.85));
+      }`
+  });
+  const thread=new THREE.Mesh(new THREE.TubeGeometry(threadCurve,220,0.014,8,false),threadMat);
+  scene.add(thread);
+
+  const composer=new EffectComposer(renderer);
+  composer.addPass(new RenderPass(scene,camera));
+  if(!new URLSearchParams(location.search).has('nobloom')){   // TEMP DEBUG: ?nobloom para aislar el shader del bloom
+    composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),0.45,0.4,0.3));
+  }
+  composer.addPass(new OutputPass());
+
+  function fit(){renderer.setSize(innerWidth,innerHeight);composer.setSize(innerWidth,innerHeight);
+    camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix(); resizeBgRT();}
+  fit(); addEventListener('resize',fit);
+
+  // ---- Progreso de scroll → uOrder + cámara viajando por el eje (hero → cada placa) ----
+  const camLook=new THREE.Vector3(0,0,0);
+  const lastPlateY=STAGES.at(-1).y;
+  const lerp=(a,b,k)=>a+(b-a)*k;
+  let progress=0, camTargetY=0.8, camTargetZ=9, camLookTargetY=0;
+  function updateFromScroll(){
+    const m=document.documentElement.scrollHeight-innerHeight;
+    progress=m>0?scrollY/m:0;
+    uniforms.uOrder.value=Math.min(progress*4.0,1);       // el caos se calibra rápido, ya en el hero
+    camTargetY=lerp(0.8, lastPlateY-3, progress);
+    camTargetZ=lerp(9, 5.2, progress);
+    camLookTargetY=lerp(0, lastPlateY, progress);
+  }
+  addEventListener('scroll',updateFromScroll,{passive:true});
+
+  // cursor empuja + parallax leve de cámara en X (solo hero) + raycast de placas (hover neón)
+  const ray=new THREE.Raycaster(), ndc=new THREE.Vector2(), plane=new THREE.Plane(new THREE.Vector3(0,0,1),0), hit=new THREE.Vector3();
+  let pointerX=0, hoveredPlate=null;
+  function setMouse(cx,cy){
+    ndc.set((cx/innerWidth)*2-1,-(cy/innerHeight)*2+1); ray.setFromCamera(ndc,camera);
+    ray.ray.intersectPlane(plane,hit); if(hit) uniforms.uMouse.value.copy(hit); uniforms.uForce.value=1.1;
+    pointerX=(cx/innerWidth-0.5);
+    const hits=ray.intersectObjects(plates,false);
+    hoveredPlate=hits.length?hits[0].object:null;
+  }
+  if(!TOUCH) addEventListener('mousemove',e=>setMouse(e.clientX,e.clientY));
+
+  // ---- Cursor con cuerpo + label + haze (siguen al mouse con inercia) ----
+  const cursorEl=document.querySelector('.cursor'), cursorLabelEl=document.querySelector('.cursor__label');
+  const hazeEl=document.querySelector('.cursor-haze');
+  const curP={x:innerWidth/2,y:innerHeight/2}, curT={...curP};
+  if(!TOUCH && !REDUCE){
+    addEventListener('mousemove',e=>{
+      curT.x=e.clientX; curT.y=e.clientY;
+      hazeEl.style.transform=`translate(${e.clientX}px,${e.clientY}px) translate(-50%,-50%)`;
+      hazeEl.classList.add('on');
+    });
+    addEventListener('mouseleave',()=>hazeEl.classList.remove('on'));
+    document.querySelectorAll('[data-cursor-label]').forEach(el=>{
+      el.addEventListener('mouseenter',()=>{ cursorEl.classList.add('big'); cursorLabelEl.textContent=el.dataset.cursorLabel; });
+      el.addEventListener('mouseleave',()=>cursorEl.classList.remove('big'));
+    });
+  }
+
+  // ---- Docking: el texto se ancla cada frame al borde proyectado de SU placa 3D ----
+  // (texto + placa = una sola pieza; reemplaza el IntersectionObserver, que solo prendía/apagaba
+  // opacidad sin relación real con dónde estaba la placa en pantalla).
+  const stageCopyEls=[...document.querySelectorAll('.stage-copy')];
+  const _projV=new THREE.Vector3();
+  function projectPoint(x,y,z){
+    _projV.set(x,y,z).project(camera);
+    return { x:(_projV.x*0.5+0.5)*innerWidth, y:(1-(_projV.y*0.5+0.5))*innerHeight };
+  }
+  const EDGE_MARGIN=1.7, DOCK_GAP=18;
+  function dockStageCopies(){
+    for(let i=0;i<STAGES.length;i++){
+      const s=STAGES[i], el=stageCopyEls[i]; if(!el) continue;
+      const edgeX=s.x<0?s.x-EDGE_MARGIN:s.x+EDGE_MARGIN;
+      const edgeP=projectPoint(edgeX,s.y,0), centerP=projectPoint(s.x,s.y,0);
+      if(el._w==null){ el._w=el.offsetWidth; el._h=el.offsetHeight; }
+      let tx=s.x<0 ? (edgeP.x-el._w-DOCK_GAP) : (edgeP.x+DOCK_GAP);
+      tx=Math.max(12, Math.min(tx, innerWidth-el._w-12));   // nunca se va de pantalla (placas con offset grande)
+      const ty=Math.max(12, Math.min(centerP.y-el._h/2, innerHeight-el._h-12));
+      el.style.transform=`translate3d(${tx}px,${ty}px,0)`;
+      const dist=Math.abs(camLook.y-s.y);
+      const op=Math.max(0,Math.min(1,1-dist/6));
+      el.style.opacity=op; el.classList.toggle('active',op>0.5);
+    }
+  }
+
+  const clock=new THREE.Clock(); let frames=0;
+  const params=new URLSearchParams(location.search);
+  const SHOT=params.has('shot');
+  const shotStage=params.get('stage');            // ?shot&stage=2 → verificar una etapa puntual
+  if(SHOT){
+    if(shotStage!=null){
+      const s=STAGES[+shotStage];
+      // Replica la cámara REAL del scroll (no una vista de acercamiento artificial) — así el
+      // shot verifica lo mismo que el usuario ve al scrollear hasta esa etapa.
+      const pAt=s.y/lastPlateY;
+      camera.position.set(0, lerp(0.8,lastPlateY-3,pAt), lerp(9,5.2,pAt));
+      camLook.set(0, s.y, 0);
+      uniforms.uOrder.value=1;
+      if(params.has('hover')) plates[+shotStage].material.userData.uHover.value=1;  // ?shot&stage=N&hover → verificar neón
+    } else { uniforms.uOrder.value=0.32; camera.position.set(0,0.8,9); camLook.set(0,0,0); }
+  }
+  function render(){
+    const t=clock.getElapsedTime();
+    uniforms.uTime.value=t; uniforms.uForce.value*=0.94;
+    threadUniforms.uTime.value=t;
+    camera.position.y+=(camTargetY-camera.position.y)*0.06;
+    camera.position.z+=(camTargetZ-camera.position.z)*0.06;
+    camera.position.x+=((progress<0.14?pointerX*1.4:0)-camera.position.x)*0.06;
+    camLook.y+=(camLookTargetY-camLook.y)*0.06;
+    camera.lookAt(camLook);
+    dockStageCopies();   // texto anclado al borde proyectado de su placa — una sola pieza
+    // hover neón: cada placa se acerca a 1 si es la apuntada, decae a 0 si no
+    plates.forEach(p=>{ const target=(p===hoveredPlate)?1:0;
+      p.material.userData.uHover.value+=(target-p.material.userData.uHover.value)*0.15; });
+    // cursor con inercia (masa) — el Sello Innovatron
+    if(!TOUCH && !REDUCE){
+      curP.x+=(curT.x-curP.x)*0.18; curP.y+=(curT.y-curP.y)*0.18;
+      cursorEl.style.transform=`translate(${curP.x}px,${curP.y}px) translate(-50%,-50%)`;
+    }
+    renderBackdrop();   // 1 render extra (sin placas) que todas samplean para la refracción
+    composer.render();
+    frames++;
+    if(REDUCE&&frames>2) return;
+    requestAnimationFrame(render);
+  }
+  updateFromScroll();
+  camera.lookAt(camLook); dockStageCopies();   // evita el flash de posición (0,0) en el primer frame
+  if(SHOT){
+    // Captura: render SÍNCRONO (sin rAF, que se throttlea a ~1fps en tabs de background).
+    // Con la cámara/uOrder ya fijados no hace falta converger nada — 3 frames alcanzan.
+    const shotFrames=shotStage!=null?8:60;   // vista de placa: barato ahora (frostGlass, sin transmission real)
+    for(let i=0;i<shotFrames;i++){
+      uniforms.uTime.value=i*0.03; uniforms.uForce.value*=0.94;
+      threadUniforms.uTime.value=i*0.03;
+      camera.lookAt(camLook); renderBackdrop(); composer.render();
+    }
+    console.log('[amir] shot listo (sync)');
+  } else render();
+  console.log('[amir] hero + método listo ·',N,'partículas ·',STAGES.length,'placas');
+  </script>
+</body>
+</html>
