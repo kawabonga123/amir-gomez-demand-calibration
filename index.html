@@ -379,7 +379,10 @@
       const titleMat=frostGlass(makeTitleMatcap(s.color), s.color);   // misma técnica de vidrio, textura propia
       const lineHeight=0.62, size=0.42, totalH=(s.lines.length-1)*lineHeight;
       s.lines.forEach((line,li)=>{
-        const geo=new TextGeometry(line,{font,size,depth:0.14,curveSegments:6,
+        // OJO (bug real): la propiedad de profundidad de TextGeometry se llama "height", NO
+        // "depth" (nombre heredado de una API vieja). "depth" no existe → default silencioso
+        // a 50 → el texto se extruía 50 unidades en Z ("infinito", ilegible). Ver BIBLIOTECA-3D.md.
+        const geo=new TextGeometry(line,{font,size,height:0.14,curveSegments:6,
           bevelEnabled:true,bevelThickness:0.02,bevelSize:0.014,bevelSegments:3});
         geo.computeBoundingBox();
         const w=geo.boundingBox.max.x-geo.boundingBox.min.x;
