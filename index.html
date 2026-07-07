@@ -105,7 +105,7 @@
     <header class="hero">
       <span class="mono eyebrow">Demand calibration system</span>
       <h1>Calibrate demand<br>before you<br><span class="cy">scale spend.</span></h1>
-      <p class="sub">Amir turns scattered paid media, funnels and analytics into one clean, measurable acquisition signal — so budget only grows where the signal stays sharp.</p>
+      <p class="sub">We turn scattered paid media, funnels and analytics into one clean, measurable acquisition signal — so budget only grows where the signal stays sharp.</p>
       <a class="cta" href="#contact"><span>Request a signal audit</span><span class="arrow">→</span></a>
     </header>
     <span class="mono scroll-cue">scroll to calibrate ↓</span>
@@ -337,7 +337,7 @@
         behind+=texture2D(tBackdrop,distortedUV-vec2(0.0,blurAmt)).rgb*0.18;
         vec3 outgoingLight=mix(behind, diffuseColor.rgb*matcapColor.rgb, 0.28);  // el fondo domina, difuminado
         outgoingLight+=fres*vec3(0.85,0.95,0.92)*(0.22+uHover*1.4);     // el rim se dispara al hover
-        outgoingLight+=uNeon*uHover*0.7;                                 // baño neón del color de etapa
+        outgoingLight+=uNeon*(0.1+uHover*0.65);                          // tinte de etapa SIEMPRE presente, se dispara al hover
         diffuseColor.a=mix(diffuseColor.a,0.92,uHover);                  // más opaca/visible al hover
         `
       );
@@ -353,10 +353,9 @@
     plateMaterials.push(material);
     const plate=new THREE.Mesh(plateGeo,material);
     plate.position.set(s.x, s.y, 0);
-    // acento sutil de color detrás (además de lo que ya se ve del backdrop real)
-    const accent=new THREE.Mesh(new THREE.PlaneGeometry(1.7,2.2),
-      new THREE.MeshBasicMaterial({color:s.color,transparent:true,opacity:0.22,toneMapped:false}));
-    accent.position.set(0,0,-0.35); plate.add(accent);
+    // SIN acento rectangular (era "caja dentro de caja" — mala práctica). El color de etapa
+    // ahora vive DENTRO del propio vidrio (tinte permanente en el shader, ver frostGlass) y en
+    // la textura del título — no hace falta un plano extra detrás.
     scene.add(plate);
     return plate;
   });
