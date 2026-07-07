@@ -44,19 +44,20 @@
   .content{position:relative;z-index:3;pointer-events:none}
   .content a{pointer-events:auto}
   nav{position:fixed;top:0;left:0;width:100%;z-index:60;display:flex;justify-content:space-between;align-items:center;
-    padding:1.6rem 6vw;mix-blend-mode:difference}
-  nav .brand{font-weight:700;letter-spacing:.02em;font-size:1rem}
+    padding:1.6rem 6vw;padding-left:max(6vw,env(safe-area-inset-left));padding-right:max(6vw,env(safe-area-inset-right));
+    mix-blend-mode:difference}
+  nav .brand{font-weight:700;letter-spacing:.02em;font-size:clamp(.82rem,3.2vw,1rem);white-space:nowrap}
   nav .links{display:flex;gap:2.2rem}
   nav .links a{position:relative;color:var(--fg);text-decoration:none;font-family:'Space Mono',monospace;
-    font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;padding-bottom:.25rem}
+    font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;padding-bottom:.25rem;white-space:nowrap}
   nav .links a::after{content:'';position:absolute;left:0;bottom:0;width:100%;height:1px;background:var(--cyan);
     transform:scaleX(0);transform-origin:left;transition:transform .4s var(--ease)}
   nav .links a:hover::after{transform:scaleX(1)}
   nav .links a:hover{color:var(--cyan)}
 
-  .hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:0 6vw}
+  .hero{min-height:100vh;min-height:100svh;display:flex;flex-direction:column;justify-content:center;padding:0 6vw}
   .hero .eyebrow{margin-bottom:1.6rem}
-  .hero h1{font-weight:700;letter-spacing:-.035em;line-height:.92;font-size:clamp(3rem,10.5vw,11rem);max-width:15ch}
+  .hero h1{font-weight:700;letter-spacing:-.035em;line-height:.92;font-size:clamp(2.2rem,10.5vw,11rem);max-width:15ch}
   .hero h1 .cy{color:var(--cyan)}
   .hero p.sub{max-width:33ch;margin-top:2rem;color:#c4ccc9;font-size:clamp(1rem,1.3vw,1.2rem);line-height:1.55}
   .cta{position:relative;display:inline-flex;align-items:center;gap:.7rem;margin-top:2.6rem;padding:1rem 1.8rem;
@@ -71,14 +72,29 @@
   .cta svg,.cta span{position:relative}
   .cta .arrow{display:inline-block;transition:transform .4s var(--ease)}
   .cta:hover .arrow{transform:translateX(5px)}
-  .scroll-cue{position:fixed;bottom:1.6rem;left:50%;transform:translateX(-50%);z-index:60}
+  .scroll-cue{position:fixed;bottom:1.6rem;bottom:max(1.6rem,env(safe-area-inset-bottom));left:50%;
+    transform:translateX(-50%);z-index:60}
+
+  /* ---- Mobile: nav compacta (4 links + brand no deben desbordar en ~375px), sin barra de
+     direcciones saltando el layout (100svh ya cubre eso arriba), CTA más compacto. ---- */
+  @media(max-width:640px){
+    nav{padding-top:1.15rem;padding-bottom:1.15rem}
+    nav .links{gap:1rem}
+    nav .links a{font-size:.6rem;letter-spacing:.08em}
+    .hero p.sub{font-size:.95rem}
+    .cta{padding:.85rem 1.4rem;font-size:.85rem;margin-top:2rem}
+  }
+  @media(max-width:380px){
+    nav .links{gap:.6rem}
+    nav .links a{font-size:.54rem;letter-spacing:.05em}
+  }
 
   /* ---- Método: 5 etapas. El TÍTULO ahora es geometría 3D hija de la placa (ver JS) — hereda
      su movimiento automáticamente, con volumen y textura propia. El DOM solo lleva el párrafo
      (caption legible) anclado bajo la placa cada frame (dockStageCopies()), + un h2 sr-only. ---- */
   .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
     clip:rect(0,0,0,0);white-space:nowrap;border:0}
-  .stage{min-height:100vh}
+  .stage{min-height:100vh;min-height:100svh}
   .stage-copy{position:fixed;top:0;left:0;z-index:55;width:min(30ch,80vw);opacity:0;pointer-events:none;
     will-change:transform,opacity;transition:opacity .5s var(--ease);text-align:center;
     text-shadow:0 2px 16px rgba(0,0,0,.95),0 0 3px rgba(0,0,0,.95)}
@@ -168,19 +184,25 @@
     const s=document.createElement('style'); s.textContent='.content,.scrim{display:none!important}';
     document.head.appendChild(s);
   }
+  // quality/bloom/blurTaps: el frost (backdrop+distorsión+blur de 5 muestras) + 10 títulos 3D
+  // con bevel + el pase extra de renderBackdrop() son mucho más pesados de lo que era el tier
+  // original — en gama baja/mobile se recorta el muestreo de blur y el bloom, no solo el DPR/count.
   const TIER=(()=>{
-    if(DEBUG_LOWTIER) return{dpr:1,count:600};
-    const small=Math.min(screen.width,screen.height)<760;
-    if(small) return{dpr:Math.min(devicePixelRatio,1),count:5000};
-    if(TOUCH) return{dpr:Math.min(devicePixelRatio,1.25),count:8000};
-    return{dpr:Math.min(devicePixelRatio,1.5),count:9000};})();
+    if(DEBUG_LOWTIER) return{dpr:1,count:600,quality:'low',blurTaps:1,bloom:0.28};
+    // innerWidth/innerHeight (viewport real que se renderiza), NO screen.width/height (pantalla
+    // física del dispositivo — en headless/algunos webviews da 0, y en desktop con ventana
+    // angosta da el ancho del monitor entero, no el de la ventana: señal equivocada para el costo real).
+    const small=Math.min(innerWidth,innerHeight)<760;
+    if(small) return{dpr:Math.min(devicePixelRatio,1),count:5000,quality:'low',blurTaps:1,bloom:0.3};
+    if(TOUCH) return{dpr:Math.min(devicePixelRatio,1.25),count:8000,quality:'mid',blurTaps:3,bloom:0.38};
+    return{dpr:Math.min(devicePixelRatio,1.5),count:9000,quality:'high',blurTaps:5,bloom:0.45};})();
 
   const canvas=document.getElementById('gl');
   const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
   renderer.setPixelRatio(TIER.dpr); renderer.setClearColor(0x050608,1);
   renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=0.9;
   const scene=new THREE.Scene();
-  const camera=new THREE.PerspectiveCamera(46,innerWidth/innerHeight,0.1,100); camera.position.set(0,0,9);
+  const camera=new THREE.PerspectiveCamera(46,innerWidth/innerHeight,0.1,100); camera.position.set(0,0,9*aspectZScale());
 
   // ---- Las 5 etapas del Método + la curva del hilo de señal (definidas ANTES de las partículas:
   // el campo de partículas ahora SIGUE esta misma curva, en vez de vivir solo en el hero) ----
@@ -306,6 +328,23 @@
   function frostGlass(matcap,color){
     const uHover={value:0};
     const m=new THREE.MeshMatcapMaterial({matcap,color:0xffffff,transparent:true,opacity:0.6,depthWrite:false});
+    // El blur de 5 muestras (5 texture2D por píxel, en CADA placa) es el costo recurrente más
+    // caro del frost — en tier bajo/mobile lo recortamos a 1 o 3 muestras armando el string del
+    // shader distinto SEGÚN TIER.blurTaps (esto se decide una vez, al crear el material, no por frame).
+    const taps=TIER.blurTaps;
+    const behindCode = taps>=5 ? `
+        vec3 behind=texture2D(tBackdrop,distortedUV).rgb*0.28;
+        behind+=texture2D(tBackdrop,distortedUV+vec2(blurAmt,0.0)).rgb*0.18;
+        behind+=texture2D(tBackdrop,distortedUV-vec2(blurAmt,0.0)).rgb*0.18;
+        behind+=texture2D(tBackdrop,distortedUV+vec2(0.0,blurAmt)).rgb*0.18;
+        behind+=texture2D(tBackdrop,distortedUV-vec2(0.0,blurAmt)).rgb*0.18;
+    ` : taps>=3 ? `
+        vec3 behind=texture2D(tBackdrop,distortedUV).rgb*0.5;
+        behind+=texture2D(tBackdrop,distortedUV+vec2(blurAmt,0.0)).rgb*0.25;
+        behind+=texture2D(tBackdrop,distortedUV-vec2(blurAmt,0.0)).rgb*0.25;
+    ` : `
+        vec3 behind=texture2D(tBackdrop,distortedUV).rgb;
+    `;
     m.onBeforeCompile=(sh)=>{
       sh.uniforms.uHover=uHover;
       sh.uniforms.uNeon={value:new THREE.Color(color)};
@@ -327,14 +366,10 @@
         float distortAmt=0.06+fres*0.1;
         vec2 screenUV=gl_FragCoord.xy/uResolution;
         vec2 distortedUV=clamp(screenUV+(normal.xy+vec2(jHash-0.5)*0.15)*distortAmt, 0.002, 0.998);
-        // FROSTING real: blur de 5 muestras (no un espejo nítido) — así se nota que hay
+        // FROSTING real: blur de N muestras según tier (no un espejo nítido) — así se nota que hay
         // materia detrás sin poder leerla con nitidez, como vidrio esmerilado de verdad.
         float blurAmt=0.008+fres*0.01;
-        vec3 behind=texture2D(tBackdrop,distortedUV).rgb*0.28;
-        behind+=texture2D(tBackdrop,distortedUV+vec2(blurAmt,0.0)).rgb*0.18;
-        behind+=texture2D(tBackdrop,distortedUV-vec2(blurAmt,0.0)).rgb*0.18;
-        behind+=texture2D(tBackdrop,distortedUV+vec2(0.0,blurAmt)).rgb*0.18;
-        behind+=texture2D(tBackdrop,distortedUV-vec2(0.0,blurAmt)).rgb*0.18;
+        ${behindCode}
         vec3 outgoingLight=mix(behind, diffuseColor.rgb*matcapColor.rgb, 0.28);  // el fondo domina, difuminado
         outgoingLight+=fres*vec3(0.85,0.95,0.92)*(0.22+uHover*1.4);     // el rim se dispara al hover
         outgoingLight+=uNeon*(0.1+uHover*0.65);                          // tinte de etapa SIEMPRE presente, se dispara al hover
@@ -434,10 +469,15 @@
   const composer=new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene,camera));
   if(!new URLSearchParams(location.search).has('nobloom')){   // TEMP DEBUG: ?nobloom para aislar el shader del bloom
-    composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),0.45,0.4,0.3));
+    composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),TIER.bloom,0.4,0.3));
   }
   composer.addPass(new OutputPass());
 
+  // Encuadre de cámara pensado para aspecto de escritorio (ancho). En un celular vertical
+  // (aspecto angosto) el frustum HORIZONTAL se comprime mucho a la misma distancia — las placas
+  // quedarían gigantes/recortadas. Compensamos alejando la cámara en proporción inversa al
+  // aspecto (referencia ~1.6, típico desktop), clampeado para no exagerar en pantallas ultra-anchas.
+  function aspectZScale(){ return Math.min(2.3, Math.max(1, 1.6/camera.aspect)); }
   function fit(){renderer.setSize(innerWidth,innerHeight);composer.setSize(innerWidth,innerHeight);
     camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix(); resizeBgRT();}
   fit(); addEventListener('resize',fit);
@@ -452,7 +492,7 @@
     progress=m>0?scrollY/m:0;
     uniforms.uOrder.value=Math.min(progress*4.0,1);       // el caos se calibra rápido, ya en el hero
     camTargetY=lerp(0.8, lastPlateY-3, progress);
-    camTargetZ=lerp(9, 5.2, progress);
+    camTargetZ=lerp(9, 5.2, progress)*aspectZScale();
     camLookTargetY=lerp(0, lastPlateY, progress);
   }
   addEventListener('scroll',updateFromScroll,{passive:true});
@@ -490,6 +530,9 @@
     _projV.set(x,y,z).project(camera);
     return { x:(_projV.x*0.5+0.5)*innerWidth, y:(1-(_projV.y*0.5+0.5))*innerHeight };
   }
+  // proximidad de cámara a cada etapa (0..1) — se reusa para el glow neón en touch, donde no
+  // existe mousemove/hover: la placa más cercana al centro de la pantalla se ilumina sola.
+  const stageProximity=new Array(STAGES.length).fill(0);
   function dockStageCopies(){
     for(let i=0;i<STAGES.length;i++){
       const s=STAGES[i], el=stageCopyEls[i]; if(!el) continue;
@@ -502,6 +545,7 @@
       const dist=Math.abs(camLook.y-s.y);
       const op=Math.max(0,Math.min(1,1-dist/5));
       el.style.opacity=op; el.classList.toggle('active',op>0.55);
+      stageProximity[i]=op;
     }
   }
 
@@ -515,11 +559,11 @@
       // Replica la cámara REAL del scroll (no una vista de acercamiento artificial) — así el
       // shot verifica lo mismo que el usuario ve al scrollear hasta esa etapa.
       const pAt=s.y/lastPlateY;
-      camera.position.set(0, lerp(0.8,lastPlateY-3,pAt), lerp(9,5.2,pAt));
+      camera.position.set(0, lerp(0.8,lastPlateY-3,pAt), lerp(9,5.2,pAt)*aspectZScale());
       camLook.set(0, s.y, 0);
       uniforms.uOrder.value=1;
       if(params.has('hover')) plates[+shotStage].material.userData.uHover.value=1;  // ?shot&stage=N&hover → verificar neón
-    } else { uniforms.uOrder.value=0.32; camera.position.set(0,0.8,9); camLook.set(0,0,0); }
+    } else { uniforms.uOrder.value=0.32; camera.position.set(0,0.8,9*aspectZScale()); camLook.set(0,0,0); }
   }
   function render(){
     const t=clock.getElapsedTime();
@@ -531,8 +575,11 @@
     camLook.y+=(camLookTargetY-camLook.y)*0.06;
     camera.lookAt(camLook);
     dockStageCopies();   // texto anclado al borde proyectado de su placa — una sola pieza
-    // hover neón: cada placa se acerca a 1 si es la apuntada, decae a 0 si no
-    plates.forEach(p=>{ const target=(p===hoveredPlate)?1:0;
+    // hover neón: en mouse, la placa apuntada se enciende a full. En touch no hay mousemove
+    // (nunca se dispara), así que la reemplazamos por un glow suave y automático basado en
+    // proximidad de scroll — la placa que está "al frente" en ese momento se ilumina sola.
+    plates.forEach((p,i)=>{
+      const target=TOUCH ? stageProximity[i]*0.55 : ((p===hoveredPlate)?1:0);
       p.material.userData.uHover.value+=(target-p.material.userData.uHover.value)*0.15; });
     renderBackdrop();   // 1 render extra (sin placas) que todas samplean para la refracción
     composer.render();
@@ -553,6 +600,7 @@
     }
     console.log('[amir] shot listo (sync)');
   } else render();
+  if(params.has('debug')) window.__amirDebug={camera,plates,STAGES,projectPoint,aspectZScale,TIER,TOUCH}; // solo verificación
   console.log('[amir] hero + método listo ·',N,'partículas ·',STAGES.length,'placas');
   </script>
 </body>
