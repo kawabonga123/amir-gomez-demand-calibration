@@ -73,21 +73,17 @@
   .cta:hover .arrow{transform:translateX(5px)}
   .scroll-cue{position:fixed;bottom:1.6rem;left:50%;transform:translateX(-50%);z-index:60}
 
-  /* ---- Método: 5 etapas. El texto se renderiza IMPRESO SOBRE la placa 3D (una sola pieza):
-     sin fondo propio (el vidrio 3D es el único vidrio), centrado cada frame en el centro
-     proyectado de su placa (dockStageCopies()). Solo text-shadow para legibilidad sobre el vidrio. ---- */
+  /* ---- Método: 5 etapas. El TÍTULO ahora es geometría 3D hija de la placa (ver JS) — hereda
+     su movimiento automáticamente, con volumen y textura propia. El DOM solo lleva el párrafo
+     (caption legible) anclado bajo la placa cada frame (dockStageCopies()), + un h2 sr-only. ---- */
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+    clip:rect(0,0,0,0);white-space:nowrap;border:0}
   .stage{min-height:100vh}
-  .stage-copy{position:fixed;top:0;left:0;z-index:55;width:min(28ch,78vw);opacity:0;pointer-events:none;
-    will-change:transform,opacity;transition:opacity .5s var(--ease);padding:1.4rem 1.6rem;
-    text-shadow:0 2px 20px rgba(0,0,0,.9),0 0 3px rgba(0,0,0,.95)}
+  .stage-copy{position:fixed;top:0;left:0;z-index:55;width:min(30ch,80vw);opacity:0;pointer-events:none;
+    will-change:transform,opacity;transition:opacity .5s var(--ease);text-align:center;
+    text-shadow:0 2px 16px rgba(0,0,0,.95),0 0 3px rgba(0,0,0,.95)}
   .stage-copy.active{pointer-events:auto}
-  .stage-num{font-size:.8rem;color:#c7d0cc;margin-bottom:.8rem;display:block;letter-spacing:.12em}
-  .stage-copy h2{font-size:clamp(1.5rem,3vw,2.4rem);font-weight:700;letter-spacing:-.02em;line-height:1.06;margin-bottom:.8rem}
   .stage-copy p{color:#d3dbd8;font-size:.92rem;line-height:1.5}
-  .stage-tag{display:inline-block;margin-bottom:.5rem;padding:.28rem .75rem;border-radius:1rem;font-size:.62rem;
-    letter-spacing:.12em;text-transform:uppercase}
-  .stage-tag{display:inline-block;margin-bottom:.6rem;padding:.3rem .8rem;border-radius:1rem;font-size:.65rem;
-    letter-spacing:.12em;text-transform:uppercase}
 
   @media(prefers-reduced-motion:reduce){.grain{animation:none}.stage-copy{opacity:1;transform:none;transition:none}}
 </style>
@@ -115,43 +111,36 @@
     <span class="mono scroll-cue">scroll to calibrate ↓</span>
 
     <section id="method" aria-label="Method">
+      <!-- El TÍTULO de cada etapa ahora es geometría 3D (hija de la placa, ver JS) — con volumen
+           y textura propia por etapa. El <h2> queda solo para lectores de pantalla (sr-only);
+           el párrafo sigue siendo texto DOM legible, anclado bajo la placa. -->
       <div class="stage" data-stage="0">
         <div class="stage-copy">
-          <span class="stage-num mono">01 / 05</span>
-          <span class="stage-tag" style="background:#ff8c2622;color:#ffab5e">Traffic</span>
-          <h2>Demand enters the system.</h2>
+          <h2 class="sr-only">Demand enters the system.</h2>
           <p>Search and paid social bring in raw, unqualified attention — the chaos before calibration.</p>
         </div>
       </div>
       <div class="stage" data-stage="1">
-        <div class="stage-copy dock-right">
-          <span class="stage-num mono">02 / 05</span>
-          <span class="stage-tag" style="background:#ffb45622;color:#ffc98a">Offer</span>
-          <h2>Message and economics compress.</h2>
+        <div class="stage-copy">
+          <h2 class="sr-only">Message and economics compress.</h2>
           <p>Positioning, pricing and audience tension get resolved before a single dollar scales.</p>
         </div>
       </div>
       <div class="stage" data-stage="2">
         <div class="stage-copy">
-          <span class="stage-num mono">03 / 05</span>
-          <span class="stage-tag" style="background:#37e7c422;color:#7ff2df">Surface</span>
-          <h2>Friction is removed from the surface.</h2>
+          <h2 class="sr-only">Friction is removed from the surface.</h2>
           <p>Landing pages and funnels are treated as one measurable conversion instrument.</p>
         </div>
       </div>
       <div class="stage" data-stage="3">
-        <div class="stage-copy dock-right">
-          <span class="stage-num mono">04 / 05</span>
-          <span class="stage-tag" style="background:#4dffd022;color:#9dffe8">Loop</span>
-          <h2>Intent is recovered, not rebought.</h2>
+        <div class="stage-copy">
+          <h2 class="sr-only">Intent is recovered, not rebought.</h2>
           <p>Email, retention and retargeting close the loop on demand that already showed interest.</p>
         </div>
       </div>
       <div class="stage" data-stage="4">
         <div class="stage-copy">
-          <span class="stage-num mono">05 / 05</span>
-          <span class="stage-tag" style="background:#4dffd033;color:#c7fff3">Signal</span>
-          <h2>The signal tells you what's next.</h2>
+          <h2 class="sr-only">The signal tells you what's next.</h2>
           <p>Clean attribution shows exactly where to cut, fix, or pressurize spend.</p>
         </div>
       </div>
@@ -169,6 +158,8 @@
   import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
   import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
   import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+  import { FontLoader } from 'three/addons/loaders/FontLoader.js';
+  import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
 
   const REDUCE=matchMedia('(prefers-reduced-motion:reduce)').matches;
   const TOUCH=matchMedia('(pointer:coarse)').matches;
@@ -195,11 +186,11 @@
   // el campo de partículas ahora SIGUE esta misma curva, en vez de vivir solo en el hero) ----
   // offsets X chicos → placas casi de frente y centradas → el texto encima calza limpio
   const STAGES=[
-    {y:-8,  x:-0.7, color:0xff8c26},  // Traffic
-    {y:-14, x: 0.7, color:0xffb456},  // Offer
-    {y:-20, x:-0.7, color:0x37e7c4},  // Surface
-    {y:-26, x: 0.7, color:0x4dffd0},  // Loop
-    {y:-32, x:-0.5, color:0x9dffe8},  // Signal
+    {y:-8,  x:-0.7, color:0xff8c26, lines:['DEMAND ENTERS','THE SYSTEM']},      // Traffic
+    {y:-14, x: 0.7, color:0xffb456, lines:['MESSAGE','COMPRESSES']},           // Offer
+    {y:-20, x:-0.7, color:0x37e7c4, lines:['FRICTION IS','REMOVED']},          // Surface
+    {y:-26, x: 0.7, color:0x4dffd0, lines:['INTENT IS','RECOVERED']},          // Loop
+    {y:-32, x:-0.5, color:0x9dffe8, lines:['THE SIGNAL','TELLS YOU NEXT']},    // Signal
   ];
   const threadPts=[new THREE.Vector3(0,5.5,-0.4)];
   STAGES.forEach(s=>threadPts.push(new THREE.Vector3(s.x*0.5, s.y, -0.4)));
@@ -212,6 +203,7 @@
   const N=TIER.count;
   const center=new Float32Array(N*3), basisA=new Float32Array(N*3), basisB=new Float32Array(N*3);
   const chaosOff=new Float32Array(N*3), angle=new Float32Array(N), rnd=new Float32Array(N);
+  const bigZ=new Float32Array(N);   // ~3%: partículas grandes que flotan ADELANTE de las placas (sutil, detalle de profundidad)
   const _up=new THREE.Vector3(0,1,0), _alt=new THREE.Vector3(1,0,0);
   const _p=new THREE.Vector3(), _tan=new THREE.Vector3(), _bin=new THREE.Vector3(), _nrm=new THREE.Vector3();
   for(let i=0;i<N;i++){
@@ -232,6 +224,7 @@
     chaosOff[i*3+1]=Math.sin(cz)*cr*0.65;
     chaosOff[i*3+2]=Math.sin(ca)*Math.cos(cz)*cr;
     rnd[i]=Math.random();
+    bigZ[i]=(i%31===0)?(0.35+Math.random()*0.55):0;   // ~3% flotan adelante (hacia cámara), sobre el plano de las placas
   }
   const geo=new THREE.BufferGeometry();
   geo.setAttribute('position',new THREE.BufferAttribute(center.slice(),3));
@@ -241,13 +234,14 @@
   geo.setAttribute('aChaosOff',new THREE.BufferAttribute(chaosOff,3));
   geo.setAttribute('aAngle',new THREE.BufferAttribute(angle,1));
   geo.setAttribute('aRnd',new THREE.BufferAttribute(rnd,1));
+  geo.setAttribute('aBigZ',new THREE.BufferAttribute(bigZ,1));
 
   const uniforms={ uTime:{value:0}, uOrder:{value:0.0}, uMouse:{value:new THREE.Vector3(99,99,99)}, uForce:{value:0} };
   const uSpin={value:0.5}, uTop={value:TUBE_TOP}, uSpan={value:TUBE_TOP-TUBE_BOTTOM};
   const mat=new THREE.ShaderMaterial({ uniforms:Object.assign(uniforms,{uSpin,uTop,uSpan}), transparent:true, depthWrite:false, blending:THREE.NormalBlending,
     vertexShader:`
       uniform float uTime,uOrder,uSpin,uTop,uSpan; uniform vec3 uMouse; uniform float uForce;
-      attribute vec3 aCenter,aBasisA,aBasisB,aChaosOff; attribute float aAngle,aRnd; varying float vOrder;
+      attribute vec3 aCenter,aBasisA,aBasisB,aChaosOff; attribute float aAngle,aRnd,aBigZ; varying float vOrder;
       float hash(vec3 p){ return fract(sin(dot(p,vec3(127.1,311.7,74.7)))*43758.5); }
       float noise(vec3 p){ vec3 i=floor(p),f=fract(p); f=f*f*(3.-2.*f);
         float n=mix(mix(mix(hash(i),hash(i+vec3(1,0,0)),f.x),mix(hash(i+vec3(0,1,0)),hash(i+vec3(1,1,0)),f.x),f.y),
@@ -269,11 +263,14 @@
         vec3 turb=curl(aCenter*0.22+uTime*0.08)*1.6;
         vec3 chaosPos=aCenter+aChaosOff+turb;
         vec3 pos=mix(chaosPos, orderedPos, order);
+        // partículas grandes flotando ADELANTE (hacia cámara): detalle sutil de profundidad
+        // por encima de las placas, sin ser prominente (son pocas, ~3%)
+        pos.z+=aBigZ+sin(uTime*0.4+aAngle)*aBigZ*0.3;
         // empuje sutil del cursor
         vec3 tm=pos-uMouse; float d=length(tm);
         pos+=normalize(tm+1e-4)*uForce*smoothstep(2.6,0.0,d);
         vec4 mv=modelViewMatrix*vec4(pos,1.0);
-        gl_PointSize=(aRnd*1.0+0.35)*(52.0/-mv.z)*(0.6+order*0.6);
+        gl_PointSize=(aRnd*1.0+0.35)*(52.0/-mv.z)*(0.6+order*0.6)*(1.0+aBigZ*2.2);
         gl_Position=projectionMatrix*mv;
       }`,
     fragmentShader:`
@@ -330,8 +327,15 @@
         float distortAmt=0.06+fres*0.1;
         vec2 screenUV=gl_FragCoord.xy/uResolution;
         vec2 distortedUV=clamp(screenUV+(normal.xy+vec2(jHash-0.5)*0.15)*distortAmt, 0.002, 0.998);
-        vec3 behind=texture2D(tBackdrop,distortedUV).rgb;
-        vec3 outgoingLight=mix(behind, diffuseColor.rgb*matcapColor.rgb, 0.22);  // el fondo domina: se ve lo de atrás
+        // FROSTING real: blur de 5 muestras (no un espejo nítido) — así se nota que hay
+        // materia detrás sin poder leerla con nitidez, como vidrio esmerilado de verdad.
+        float blurAmt=0.008+fres*0.01;
+        vec3 behind=texture2D(tBackdrop,distortedUV).rgb*0.28;
+        behind+=texture2D(tBackdrop,distortedUV+vec2(blurAmt,0.0)).rgb*0.18;
+        behind+=texture2D(tBackdrop,distortedUV-vec2(blurAmt,0.0)).rgb*0.18;
+        behind+=texture2D(tBackdrop,distortedUV+vec2(0.0,blurAmt)).rgb*0.18;
+        behind+=texture2D(tBackdrop,distortedUV-vec2(0.0,blurAmt)).rgb*0.18;
+        vec3 outgoingLight=mix(behind, diffuseColor.rgb*matcapColor.rgb, 0.28);  // el fondo domina, difuminado
         outgoingLight+=fres*vec3(0.85,0.95,0.92)*(0.22+uHover*1.4);     // el rim se dispara al hover
         outgoingLight+=uNeon*uHover*0.7;                                 // baño neón del color de etapa
         diffuseColor.a=mix(diffuseColor.a,0.92,uHover);                  // más opaca/visible al hover
@@ -356,6 +360,39 @@
     scene.add(plate);
     return plate;
   });
+
+  // ---- Título VOLUMÉTRICO 3D, hijo de la placa: hereda posición/rotación automáticamente
+  // (arregla de raíz que "el texto no acompaña a la placa" — al ser hijo, es LA MISMA pieza).
+  // Textura propia por etapa: cada título tiene su matcap generado desde el color de su etapa.
+  function makeTitleMatcap(hex){
+    const c=document.createElement('canvas'); c.width=c.height=128; const x=c.getContext('2d');
+    const col=new THREE.Color(hex); const hi=col.clone().lerp(new THREE.Color(0xffffff),0.75);
+    const lo=col.clone().multiplyScalar(0.22);
+    const g=x.createRadialGradient(48,42,4,64,64,80);
+    g.addColorStop(0,'#'+hi.getHexString()); g.addColorStop(0.45,'#'+col.getHexString());
+    g.addColorStop(0.8,'#'+lo.getHexString()); g.addColorStop(1,'#05070a');
+    x.fillStyle=g; x.fillRect(0,0,128,128);
+    const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; return t;
+  }
+  new FontLoader().load('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/fonts/helvetiker_bold.typeface.json', (font)=>{
+    STAGES.forEach((s,i)=>{
+      const plate=plates[i];
+      const titleMat=frostGlass(makeTitleMatcap(s.color), s.color);   // misma técnica de vidrio, textura propia
+      const lineHeight=0.62, size=0.42, totalH=(s.lines.length-1)*lineHeight;
+      s.lines.forEach((line,li)=>{
+        const geo=new TextGeometry(line,{font,size,depth:0.14,curveSegments:6,
+          bevelEnabled:true,bevelThickness:0.02,bevelSize:0.014,bevelSegments:3});
+        geo.computeBoundingBox();
+        const w=geo.boundingBox.max.x-geo.boundingBox.min.x;
+        geo.translate(-w/2,0,0);          // centrado horizontal
+        const mesh=new THREE.Mesh(geo,titleMat);
+        const maxW=2.6;                    // nunca más ancho que la placa (3.1) — clamp de seguridad
+        if(w>maxW) mesh.scale.setScalar(maxW/w);
+        mesh.position.set(0, totalH/2-li*lineHeight, 0.15);   // apenas saliente de la cara del vidrio
+        plate.add(mesh);
+      });
+    });
+  }, undefined, (err)=>console.warn('[amir] no se pudo cargar la fuente para los títulos 3D:',err));
 
   // ---- Backdrop compartido: 1 render extra por frame (sin las placas) que TODAS samplean ----
   let bgRT=new THREE.WebGLRenderTarget(2,2,{depthBuffer:false});
@@ -454,10 +491,11 @@
   function dockStageCopies(){
     for(let i=0;i<STAGES.length;i++){
       const s=STAGES[i], el=stageCopyEls[i]; if(!el) continue;
-      const c=projectPoint(s.x,s.y,0);                     // centro de la placa en pantalla
-      const w=el.offsetWidth, h=el.offsetHeight;           // medir fresco (no cachear: el cache daba altura errónea)
-      // el texto se CENTRA sobre la placa → se lee como impreso en el vidrio (una sola pieza)
-      const tx=c.x-w/2, ty=c.y-h/2;
+      // el TÍTULO ya vive dentro del vidrio (hijo 3D de la placa) — el párrafo (caption) se
+      // ancla JUSTO DEBAJO del borde inferior de la placa, sin taparlo.
+      const c=projectPoint(s.x, s.y-2.3, 0);
+      const w=el.offsetWidth, h=el.offsetHeight;
+      const tx=c.x-w/2, ty=c.y;
       el.style.transform=`translate3d(${Math.round(tx)}px,${Math.round(ty)}px,0)`;
       const dist=Math.abs(camLook.y-s.y);
       const op=Math.max(0,Math.min(1,1-dist/5));
