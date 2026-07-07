@@ -38,22 +38,8 @@
     transition:opacity .5s var(--ease)}
   .cursor-haze.on{opacity:1}
   @media(pointer:coarse){.cursor-haze{display:none}}
-
-  /* ---- Cursor con cuerpo + label contextual (el Sello Innovatron) ---- */
-  /* cursor: anillo cian siempre visible (sin mix-blend, que a veces lo hacía desaparecer) */
-  .cursor{position:fixed;top:0;left:0;z-index:9000;pointer-events:none;
-    width:26px;height:26px;border-radius:50%;border:1.5px solid var(--cyan);background:transparent;
-    box-shadow:0 0 10px -2px var(--cyan), inset 0 0 6px -3px var(--cyan);
-    transform:translate(-50%,-50%);transition:width .3s var(--ease),height .3s var(--ease),background .3s var(--ease)}
-  .cursor::after{content:'';position:absolute;top:50%;left:50%;width:4px;height:4px;border-radius:50%;
-    background:var(--cyan);transform:translate(-50%,-50%)}
-  .cursor.big{width:82px;height:82px;background:rgba(77,255,208,.1)}
-  .cursor.big::after{opacity:0}
-  .cursor__label{position:absolute;inset:0;display:grid;place-items:center;color:var(--cyan);
-    font-family:'Space Mono',monospace;font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;
-    opacity:0;transition:opacity .3s}
-  .cursor.big .cursor__label{opacity:1}
-  @media(pointer:coarse){.cursor{display:none}}
+  /* NUNCA cursor custom pegado al puntero (regla dura de Agus, 2026-07-07) — se usa el cursor
+     nativo del SO en todos lados. Ver Innovatron 00-manifiesto/SELLO.md. */
 
   .content{position:relative;z-index:3;pointer-events:none}
   .content a{pointer-events:auto}
@@ -111,13 +97,12 @@
   <div class="scrim" aria-hidden="true"></div>
   <div class="cursor-haze" aria-hidden="true"></div>
   <div class="grain" aria-hidden="true"></div>
-  <div class="cursor" aria-hidden="true"><span class="cursor__label"></span></div>
 
   <div class="content">
     <nav>
       <span class="brand">AMIR GÓMEZ</span>
       <span class="links">
-        <a href="#method" data-cursor-label="view">Method</a><a href="#work" data-cursor-label="view">Work</a><a href="#signal" data-cursor-label="view">Signal</a><a href="#contact" data-cursor-label="go">Contact</a>
+        <a href="#method">Method</a><a href="#work">Work</a><a href="#signal">Signal</a><a href="#contact">Contact</a>
       </span>
     </nav>
 
@@ -125,7 +110,7 @@
       <span class="mono eyebrow">Demand calibration system</span>
       <h1>Calibrate demand<br>before you<br><span class="cy">scale spend.</span></h1>
       <p class="sub">Amir turns scattered paid media, funnels and analytics into one clean, measurable acquisition signal — so budget only grows where the signal stays sharp.</p>
-      <a class="cta" href="#contact" data-cursor-label="audit"><span>Request a signal audit</span><span class="arrow">→</span></a>
+      <a class="cta" href="#contact"><span>Request a signal audit</span><span class="arrow">→</span></a>
     </header>
     <span class="mono scroll-cue">scroll to calibrate ↓</span>
 
@@ -446,29 +431,15 @@
   if(!TOUCH) addEventListener('mousemove',e=>setMouse(e.clientX,e.clientY));
 
   // ---- Cursor con cuerpo + label + haze (siguen al mouse con inercia) ----
-  const cursorEl=document.querySelector('.cursor'), cursorLabelEl=document.querySelector('.cursor__label');
+  // Haze ambiental que sigue al mouse (NO es un cursor custom — no reemplaza ni se pega al
+  // puntero nativo, es un halo de fondo). Nunca poner nada pegado al cursor: regla dura de Agus.
   const hazeEl=document.querySelector('.cursor-haze');
-  const curP={x:innerWidth/2,y:innerHeight/2}, curT={...curP};
   if(!TOUCH && !REDUCE){
     addEventListener('mousemove',e=>{
-      curT.x=e.clientX; curT.y=e.clientY;
       hazeEl.style.transform=`translate(${e.clientX}px,${e.clientY}px) translate(-50%,-50%)`;
       hazeEl.classList.add('on');
     });
     addEventListener('mouseleave',()=>hazeEl.classList.remove('on'));
-    document.querySelectorAll('[data-cursor-label]').forEach(el=>{
-      el.addEventListener('mouseenter',()=>{ cursorEl.classList.add('big'); cursorLabelEl.textContent=el.dataset.cursorLabel; });
-      el.addEventListener('mouseleave',()=>cursorEl.classList.remove('big'));
-    });
-    // loop PROPIO del cursor (independiente del render de WebGL, para que nunca se trabe).
-    // No arranca en modo ?shot (rAF infinito trabaría la captura de screenshot).
-    if(!location.search.includes('shot')){
-      (function cursorLoop(){
-        curP.x+=(curT.x-curP.x)*0.22; curP.y+=(curT.y-curP.y)*0.22;
-        cursorEl.style.transform=`translate(${curP.x}px,${curP.y}px) translate(-50%,-50%)`;
-        requestAnimationFrame(cursorLoop);
-      })();
-    }
   }
 
   // ---- Docking: el texto se ancla cada frame al borde proyectado de SU placa 3D ----
