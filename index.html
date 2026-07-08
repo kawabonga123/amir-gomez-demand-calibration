@@ -92,21 +92,6 @@
     nav .links a{font-size:.54rem;letter-spacing:.05em}
   }
 
-  /* ---- Resultados: prueba temprana, antes de pedir 5 pantallas de scroll del Método. Números
-     con count-up (JS), separados por hairlines (NO cajas — respeta la regla anti-nested-boxes). ---- */
-  .results{min-height:100vh;min-height:100svh;display:flex;flex-direction:column;justify-content:center;padding:6rem 6vw}
-  .results-eyebrow{display:block;margin-bottom:2.2rem}
-  .results-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:2.6rem 4rem;max-width:640px}
-  .stat{border-top:1px solid rgba(242,239,233,.18);padding-top:1.1rem}
-  .stat .num{display:block;font-weight:700;letter-spacing:-.02em;font-size:clamp(2.4rem,6vw,4.6rem);
-    line-height:1;color:var(--brand)}
-  .stat p{margin-top:.7rem;color:#c4ccc9;font-size:.85rem;line-height:1.45;max-width:26ch}
-  .brands{margin-top:3.5rem;letter-spacing:.16em}
-  @media(max-width:640px){
-    .results-grid{grid-template-columns:1fr;gap:1.8rem;max-width:none}
-    .results{padding:4.5rem 6vw}
-  }
-
   /* ---- Método: 5 etapas. El TÍTULO ahora es geometría 3D hija de la placa (ver JS) — hereda
      su movimiento automáticamente, con volumen y textura propia. El DOM solo lleva el párrafo
      (caption legible) anclado bajo la placa cada frame (dockStageCopies()), + un h2 sr-only. ---- */
@@ -119,6 +104,16 @@
   .stage-copy.active{pointer-events:auto}
   .stage-copy p{color:#d3dbd8;font-size:.92rem;line-height:1.5}
   .case-name{display:block;margin-bottom:.5rem;color:var(--brand)}
+  /* Method: pasos cortos (2 palabras + 1 oración) no justifican una pantalla completa cada uno —
+     acortamos el ritmo de scroll (no afecta a Work, que usa la misma clase .stage). */
+  #method .stage{min-height:78svh}
+
+  /* ---- Work: 6 casos agrupados de a PARES por tema (mitad del scroll que 6 pantallas sueltas,
+     más narrativo). El label de tema queda "sticky" mientras se recorre el par. En pantallas
+     angostas (mobile) las 2 placas del par se apilan centradas en vez de ir lado a lado — ver
+     PAIR_SIDE en JS: lado a lado excede el frustum comprimido en portrait angosto. ---- */
+  .pair-theme{position:sticky;top:6.5rem;margin-left:6vw;display:inline-block;color:var(--brand);z-index:2}
+  body.pairs-stack #work .stage{min-height:150svh}
 
   /* ---- Team: DOM puro, sin 3D (el eje ya terminó en Work) — Amir protagonista (columna más ancha) ---- */
   .team{padding:8rem 6vw 6rem;max-width:1100px}
@@ -166,7 +161,7 @@
     <nav>
       <span class="brand">A<span class="accent">+</span> GROWTH</span>
       <span class="links">
-        <a href="#results">Results</a><a href="#method">Method</a><a href="#work">Work</a><a href="#team">Team</a><a href="#contact">Contact</a>
+        <a href="#method">Method</a><a href="#work">Work</a><a href="#team">Team</a><a href="#contact">Contact</a>
       </span>
     </nav>
 
@@ -178,29 +173,6 @@
     </header>
     <span class="mono scroll-cue">scroll to calibrate ↓</span>
 
-    <section id="results" class="results" aria-label="Results">
-      <span class="mono results-eyebrow">Proof, not promises</span>
-      <div class="results-grid">
-        <div class="stat">
-          <span class="num" aria-hidden="true">$0M+</span>
-          <p>margin closed from just $2,744 in ad spend — one webinar funnel, still live<span class="sr-only"> (final: $1M+)</span></p>
-        </div>
-        <div class="stat">
-          <span class="num" aria-hidden="true">0×</span>
-          <p>lower cost per qualified lead — from $50 down to $5<span class="sr-only"> (final: 10×)</span></p>
-        </div>
-        <div class="stat">
-          <span class="num" aria-hidden="true">0×</span>
-          <p>ROAS after scaling UGC + AI creative — up from 2×<span class="sr-only"> (final: 7×)</span></p>
-        </div>
-        <div class="stat">
-          <span class="num" aria-hidden="true">0K</span>
-          <p>leads generated at $4.5 avg. cost — single social funnel, $335K spend<span class="sr-only"> (final: 63K)</span></p>
-        </div>
-      </div>
-      <p class="mono brands">Ethan Allen · Dirt King · Giant Partners · Nationwide Trailers</p>
-    </section>
-
     <section id="method" aria-label="Method">
       <!-- El TÍTULO de cada etapa ahora es geometría 3D (hija de la placa, ver JS) — con volumen
            y textura propia por etapa. El <h2> queda solo para lectores de pantalla (sr-only);
@@ -208,74 +180,73 @@
       <div class="stage" data-stage="0">
         <div class="stage-copy">
           <h2 class="sr-only">Understand the system.</h2>
-          <p>Deep discovery on the business model, audience and funnel assets — we map the system before touching a dollar.</p>
+          <p>Deep discovery on the business model, audience and funnel assets — we map the system before touching a dollar. No campaign starts without knowing exactly what's being sold, to whom, and why they'd say yes.</p>
         </div>
       </div>
       <div class="stage" data-stage="1">
         <div class="stage-copy">
           <h2 class="sr-only">Creative at volume.</h2>
-          <p>Strategy first, then creative volume — ads varied up to 12× more often than standard, always on-brand.</p>
+          <p>Strategy first, then creative volume — ads varied up to 12× more often than standard, always on-brand. Fresh creative beats fatigue before it ever costs you performance.</p>
         </div>
       </div>
       <div class="stage" data-stage="2">
         <div class="stage-copy">
           <h2 class="sr-only">Ship the funnel.</h2>
-          <p>Meticulous measurement plan, then fast implementation. Speed is part of the strategy.</p>
+          <p>Meticulous measurement plan, then fast implementation. Speed is part of the strategy — the sooner it's live, the sooner the data starts working for you.</p>
         </div>
       </div>
       <div class="stage" data-stage="3">
         <div class="stage-copy">
           <h2 class="sr-only">Measure everything.</h2>
-          <p>Business results, not vanity metrics. Everything measurable gets measured — and improved.</p>
+          <p>Business results, not vanity metrics. Everything measurable gets measured and improved, so budget only follows what actually moves revenue.</p>
         </div>
       </div>
       <div class="stage" data-stage="4">
         <div class="stage-copy">
           <h2 class="sr-only">The signal compounds.</h2>
-          <p>Winners get budget, losers get killed. The signal tells you exactly what to scale next.</p>
+          <p>Winners get budget, losers get killed. The signal tells you exactly what to scale next — compounding every week the funnel keeps running.</p>
         </div>
       </div>
     </section>
 
     <section id="work" aria-label="Work">
-      <!-- Mismo patrón que Method: el número-resultado es geometría 3D hija de la placa; el
-           nombre del caso + la descripción quedan en DOM, anclados bajo la placa cada frame. -->
-      <div class="stage" data-case="0">
+      <!-- 6 casos agrupados de a PARES por tema (mitad del scroll de 6 pantallas sueltas, más
+           narrativo). El número-resultado es geometría 3D hija de la placa; nombre+descripción
+           quedan en DOM, anclados bajo cada placa cada frame (dockCaseCopies, ver JS). El label
+           de tema (.pair-theme) es sticky: no depende de proyección 3D, es contenido de flujo. -->
+      <div class="stage" data-pair="0">
+        <span class="mono pair-theme">Close &amp; Convert</span>
         <div class="stage-copy case-copy">
           <span class="mono case-name">Webinar + VSL</span>
           <h2 class="sr-only">$1M+ in margin from $2,744 in ad spend.</h2>
           <p>B2B and B2C lending funnel with on-demand webinars. 5 deals closed, campaign still live.</p>
         </div>
-      </div>
-      <div class="stage" data-case="1">
         <div class="stage-copy case-copy">
           <span class="mono case-name">Lead Magnet B2B</span>
           <h2 class="sr-only">10× lower cost per lead.</h2>
           <p>Full funnel incl. the lead magnet. Ads varied up to 12× more often — cost per ICP lead cut from $50 to $5.</p>
         </div>
       </div>
-      <div class="stage" data-case="2">
+      <div class="stage" data-pair="1">
+        <span class="mono pair-theme">Creative &amp; Volume</span>
         <div class="stage-copy case-copy">
           <span class="mono case-name">UGC + AI</span>
           <h2 class="sr-only">7× ROAS, up from 2×.</h2>
           <p>20× more UGC volume than the existing creative, for a US legal company.</p>
         </div>
-      </div>
-      <div class="stage" data-case="3">
         <div class="stage-copy case-copy">
           <span class="mono case-name">LeadGen B2C</span>
           <h2 class="sr-only">63,000 leads at $4.5 average cost.</h2>
           <p>$335K/yr social campaign for a home-decor leader, full funnel built end to end.</p>
         </div>
       </div>
-      <div class="stage" data-case="4">
+      <div class="stage" data-pair="2">
+        <span class="mono pair-theme">Channel Mastery</span>
         <div class="stage-copy case-copy">
           <span class="mono case-name">PPC B2B</span>
           <h2 class="sr-only">3.7× revenue growth.</h2>
           <p>Google and Microsoft Ads over 18 months. ROI doubled with a TOFU/BOFU split.</p>
         </div>
-      </div>
-      <div class="stage" data-case="5">
         <div class="stage-copy case-copy">
           <span class="mono case-name">SEO + GEO</span>
           <h2 class="sr-only">5.3× organic traction.</h2>
@@ -368,6 +339,13 @@
     if(small) return{dpr:Math.min(devicePixelRatio,1),count:5000,quality:'low',blurTaps:1,bloom:0.3};
     if(TOUCH) return{dpr:Math.min(devicePixelRatio,1.25),count:8000,quality:'mid',blurTaps:3,bloom:0.38};
     return{dpr:Math.min(devicePixelRatio,1.5),count:9000,quality:'high',blurTaps:5,bloom:0.45};})();
+  // Work: ¿los 2 casos de cada par van lado a lado (desktop/tablet) o apilados centrados
+  // (mobile angosto)? Decidido UNA vez al cargar (mismo patrón que TIER) — lado a lado necesita
+  // presupuesto de frustum horizontal que un portrait angosto no tiene (ver CASES más abajo).
+  // Umbral 0.75: por debajo de ahí aspectZScale ya está en su tope (2.3) y el frustum se sigue
+  // angostando — por encima, aspectZScale compensa perfecto y el presupuesto queda ~constante.
+  const PAIR_SIDE=(innerWidth/innerHeight)>=0.75;
+  if(!PAIR_SIDE) document.body.classList.add('pairs-stack');
 
   const canvas=document.getElementById('gl');
   const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
@@ -388,31 +366,51 @@
     {y:-26, x: 0.7, color:0xe8551e, lines:['MEASURE','EVERYTHING']},          // Measurement
     {y:-32, x:-0.5, color:0xff7a3d, lines:['THE SIGNAL','COMPOUNDS']},        // Signal
   ];
-  // ---- Work: 6 casos reales, siguen bajando por el MISMO eje (mismo principio "un solo objeto
-  // eje" de Innovatron). Placas APAISADAS (más anchas que altas) — el "gancho" es un número corto
-  // en 3D (geometría barata: 1 palabra, no 2 líneas largas como en Method), la descripción va en DOM.
-  // x=0 (SIN alternancia): a diferencia de Method (placas angostas 3.1, hay presupuesto de sobra
-  // para un offset ±0.7), estas placas apaisadas de 4.2 de ancho casi llenan el frustum horizontal
-  // en mobile (aspectZScale al tope) — CUALQUIER offset lateral las recorta contra el borde de
-  // pantalla. Verificado numéricamente: con x:±0.4 la última placa se recortaba 14px en 375px.
-  const CASES=[
-    {y:-40, x: 0, color:0xe8551e, hook:'$1M+', name:'Webinar + VSL',
-      caption:'B2B and B2C lending funnel with on-demand webinars. 5 deals closed for $1M+ in margin — from just $2,744 spent. Campaign still live.'},
-    {y:-46, x: 0, color:0xf0611f, hook:'10X', name:'Lead Magnet B2B',
-      caption:'Full funnel built end to end, lead magnet included. Ads varied up to 12× more often — cost per ICP lead cut from $50 to $5.'},
-    {y:-52, x: 0, color:0xff6a2b, hook:'7X', name:'UGC + AI',
-      caption:'20× more UGC volume than the existing creative, for a US legal company. ROAS climbed from 2× to 7×.'},
-    {y:-58, x: 0, color:0xff7a3d, hook:'63K', name:'LeadGen B2C',
-      caption:'Full-funnel $335K/yr social campaign for a home-decor leader. 63,000+ leads at $4.5 average cost.'},
-    {y:-64, x: 0, color:0xff8a52, hook:'3.7X', name:'PPC B2B',
-      caption:'Google and Microsoft Ads over 18 months for an advertising agency. Revenue up 3.7×, ROI doubled with a TOFU/BOFU split.'},
-    {y:-70, x: 0, color:0xff9a68, hook:'5.3X', name:'SEO + GEO',
-      caption:'SEO and GEO tooling for a Texas trailer-industry leader. Organic traction up 5.3× in 2024 — 410,000+ organic visitors.'},
+  // ---- Work: 6 casos reales agrupados de a PARES por tema (mitad del scroll de 6 pantallas
+  // sueltas — feedback de Agus tras ver el sitio: "hay que scrollear muchísimo", "condensar").
+  // Siguen bajando por el MISMO eje (principio "un solo objeto eje" de Innovatron). El "gancho"
+  // es un número corto en 3D (geometría barata), nombre+descripción van en DOM.
+  const CASE_PAIRS=[
+    { theme:'Close & Convert', cases:[
+      {color:0xe8551e, hook:'$1M+', name:'Webinar + VSL',
+        caption:'B2B and B2C lending funnel with on-demand webinars. 5 deals closed for $1M+ in margin — from just $2,744 spent. Campaign still live.'},
+      {color:0xf0611f, hook:'10X', name:'Lead Magnet B2B',
+        caption:'Full funnel built end to end, lead magnet included. Ads varied up to 12× more often — cost per ICP lead cut from $50 to $5.'},
+    ]},
+    { theme:'Creative & Volume', cases:[
+      {color:0xff6a2b, hook:'7X', name:'UGC + AI',
+        caption:'20× more UGC volume than the existing creative, for a US legal company. ROAS climbed from 2× to 7×.'},
+      {color:0xff7a3d, hook:'63K', name:'LeadGen B2C',
+        caption:'Full-funnel $335K/yr social campaign for a home-decor leader. 63,000+ leads at $4.5 average cost.'},
+    ]},
+    { theme:'Channel Mastery', cases:[
+      {color:0xff8a52, hook:'3.7X', name:'PPC B2B',
+        caption:'Google and Microsoft Ads over 18 months for an advertising agency. Revenue up 3.7×, ROI doubled with a TOFU/BOFU split.'},
+      {color:0xff9a68, hook:'5.3X', name:'SEO + GEO',
+        caption:'SEO and GEO tooling for a Texas trailer-industry leader. Organic traction up 5.3× in 2024 — 410,000+ organic visitors.'},
+    ]},
   ];
+  // x: PAIR_SIDE (desktop/tablet) → los 2 casos van lado a lado (±1.3, placas más angostas,
+  // ver caseGeo). !PAIR_SIDE (mobile angosto) → apilados y centrados (x:0, mismo fix anti-recorte
+  // ya verificado en la ronda anterior: cualquier offset lateral con placa ancha se recorta).
+  const PAIR_GAP=6;
+  const CASES=[];
+  CASE_PAIRS.forEach((pair,gi)=>{
+    const groupY=STAGES.at(-1).y-8-gi*PAIR_GAP;
+    pair.cases.forEach((c,ci)=>{
+      CASES.push(Object.assign({},c,{
+        y: PAIR_SIDE ? groupY : groupY-ci*2.6,
+        x: PAIR_SIDE ? (ci===0?-1.6:1.6) : 0,
+      }));
+    });
+  });
   const threadPts=[new THREE.Vector3(0,5.5,-0.4)];
   STAGES.forEach(s=>threadPts.push(new THREE.Vector3(s.x*0.5, s.y, -0.4)));
-  CASES.forEach(c=>threadPts.push(new THREE.Vector3(c.x*0.5, c.y, -0.4)));
-  threadPts.push(new THREE.Vector3(CASES.at(-1).x*0.5, CASES.at(-1).y-4, -0.4));
+  // Work: el hilo pasa por el CENTRO de cada par (x=0), no por cada caso — en modo lado-a-lado
+  // los casos están en x=±1.3 y seguirlos haría zigzaguear el hilo; el eje pasa detrás/entre
+  // ambas placas, que quedan simétricas a los costados.
+  CASE_PAIRS.forEach((pair,gi)=>threadPts.push(new THREE.Vector3(0, STAGES.at(-1).y-8-gi*PAIR_GAP, -0.4)));
+  threadPts.push(new THREE.Vector3(0, CASES.at(-1).y-4, -0.4));
   const threadCurve=new THREE.CatmullRomCurve3(threadPts);
   const TUBE_TOP=5.5, TUBE_BOTTOM=CASES.at(-1).y-4;
 
@@ -593,7 +591,9 @@
     return plate;
   });
   // ---- Placas de Work: MISMA técnica (frostGlass), geometría APAISADA distinta (4.4×2.4 vs 3.1×3.8) ----
-  const caseGeo=new RoundedBoxGeometry(4.2,2.4,0.22,4,0.16);
+  // PAIR_SIDE: placa más angosta (2 lado a lado deben caber en el frustum). !PAIR_SIDE: placa
+  // ancha de antes (1 sola, centrada, mismo tamaño ya verificado sin recorte hasta 320px).
+  const caseGeo=PAIR_SIDE ? new RoundedBoxGeometry(2.6,2.2,0.22,4,0.16) : new RoundedBoxGeometry(4.2,2.4,0.22,4,0.16);
   const casePlates=CASES.map((c)=>{
     const material=frostGlass(sharedMatcap,c.color);
     plateMaterials.push(material);   // mismo array: resizeBgRT/renderBackdrop actualizan TODOS los materiales frosted
@@ -651,7 +651,7 @@
       const h=geo.boundingBox.max.y-geo.boundingBox.min.y;
       geo.translate(-w/2,-h/2,0);
       const mesh=new THREE.Mesh(geo,hookMat);
-      const maxW=3.5;                     // placa apaisada de 4.2 de ancho — clamp con margen
+      const maxW=PAIR_SIDE?2.1:3.5;        // placa angosta (2.6) o ancha (4.2) — clamp con margen
       if(w>maxW) mesh.scale.setScalar(maxW/w);
       mesh.position.set(0,0.15,0.15);      // centrado, apenas saliente de la cara + espacio para el nombre debajo
       plate.add(mesh);
@@ -808,35 +808,6 @@
     }
   }
 
-  // ---- Results: count-up de una sola vez al entrar en viewport (IntersectionObserver) ----
-  const RESULTS_STATS=[
-    {target:1,  fmt:n=>`$${n.toFixed(0)}M+`},
-    {target:10, fmt:n=>`${n.toFixed(0)}×`},
-    {target:7,  fmt:n=>`${n.toFixed(0)}×`},
-    {target:63, fmt:n=>`${n.toFixed(0)}K`},
-  ];
-  function animateCount(el,target,fmt,duration=1400){
-    if(REDUCE){ el.textContent=fmt(target); return; }
-    const start=performance.now();
-    (function step(now){
-      const k=Math.min((now-start)/duration,1);
-      const eased=1-Math.pow(1-k,3);
-      el.textContent=fmt(target*eased);
-      if(k<1) requestAnimationFrame(step);
-    })(start);
-  }
-  const resultsSection=document.getElementById('results');
-  if(resultsSection){
-    const statEls=[...resultsSection.querySelectorAll('.stat .num')];
-    const resultsObserver=new IntersectionObserver((entries)=>{
-      if(entries.some(e=>e.isIntersecting)){
-        statEls.forEach((el,i)=>RESULTS_STATS[i]&&animateCount(el,RESULTS_STATS[i].target,RESULTS_STATS[i].fmt));
-        resultsObserver.disconnect();
-      }
-    },{threshold:0.4});
-    resultsObserver.observe(resultsSection);
-  }
-
   const clock=new THREE.Clock(); let frames=0;
   const params=new URLSearchParams(location.search);
   const SHOT=params.has('shot');
@@ -895,7 +866,7 @@
     }
     console.log('[amir] shot listo (sync)');
   } else render();
-  if(params.has('debug')) window.__amirDebug={camera,plates,casePlates,STAGES,CASES,projectPoint,aspectZScale,TIER,TOUCH,
+  if(params.has('debug')) window.__amirDebug={camera,plates,casePlates,STAGES,CASES,CASE_PAIRS,PAIR_SIDE,projectPoint,aspectZScale,TIER,TOUCH,
     updateFromScroll,methodEl,workEl,heroEl,camLook,get progress(){return progress},get camTargetY(){return camTargetY},
     get camTargetZ(){return camTargetZ},get uOrder(){return uniforms.uOrder.value}}; // solo verificación
   console.log('[amir] hero + método + work listo ·',N,'partículas ·',STAGES.length,'placas method ·',CASES.length,'placas work');
