@@ -398,17 +398,19 @@
   // (señal calibrada) — reemplaza la vieja rampa ámbar→cian (el cian no es de marca).
   // ---- Signal Cloud: los 4 números más fuertes, ANTES de Method — feedback de Agus: "esos
   // números no tienen el mismo impacto que las placas", "ponelos en un objeto 3D distinto,
-  // como una nube". No es una caja plana más: un cúmulo de cristales icosaédricos (barato via
-  // InstancedMesh) alrededor de cada número — mismo eje/journey, geometría genuinamente distinta.
-  // CLOUD_Y bajado de -4 a -9: en -4 la nube asomaba (parcialmente visible) durante el Hero —
-  // verificado con captura real de Chrome (hallazgo /taste 2026-07-08). A -9 queda fuera del
-  // encuadre inicial de cámara (y=0.8 mirando a y=0), solo aparece cuando el scroll la trae.
+  // como una nube". CLOUD_Y bajado de -4 a -9: en -4 la nube asomaba (parcialmente visible)
+  // durante el Hero — verificado con captura real de Chrome (hallazgo /taste 2026-07-08). A -9
+  // queda fuera del encuadre inicial de cámara (y=0.8 mirando a y=0), solo aparece con el scroll.
+  // F5 (plan de rediseño, opción A elegida por Agus): posiciones re-armadas en constelación
+  // ASIMÉTRICA (no grid 2×2 — el taste audit marcó el layout anterior como demasiado prolijo/
+  // especular) — distancia mínima entre pares ~2.3 unidades, calculada a mano para que ningún
+  // dial (radio ~1.0 con ticks) se solape con otro.
   const CLOUD_Y=-9;
   const CLOUD_STATS=[
-    {hook:'$1M+', color:0xe8551e, dx:-1.5, dy: 0.9,  caption:'margin closed from just $2,744 in ad spend — one webinar funnel, still live.'},
-    {hook:'10X',  color:0xf0611f, dx: 1.5, dy: 0.55, caption:'lower cost per qualified lead — from $50 down to $5.'},
-    {hook:'7X',   color:0xff6a2b, dx:-1.4, dy:-1.05, caption:'ROAS after scaling UGC + AI creative — up from 2×.'},
-    {hook:'63K',  color:0xff7a3d, dx: 1.4, dy:-0.7,  caption:'leads generated at $4.5 average cost — a single social funnel.'},
+    {hook:'$1M+', color:0xe8551e, dx:-1.8, dy: 1.3,  caption:'margin closed from just $2,744 in ad spend — one webinar funnel, still live.'},
+    {hook:'10X',  color:0xf0611f, dx: 1.6, dy: 0.9,  caption:'lower cost per qualified lead — from $50 down to $5.'},
+    {hook:'7X',   color:0xff6a2b, dx:-1.3, dy:-1.2,  caption:'ROAS after scaling UGC + AI creative — up from 2×.'},
+    {hook:'63K',  color:0xff7a3d, dx: 2.1, dy:-1.3,  caption:'leads generated at $4.5 average cost — a single social funnel.'},
   ].map(s=>Object.assign({},s,{x:s.dx, y:CLOUD_Y+s.dy}));
 
   // 5→3 pasos (fusionados): feedback de Agus, "demasiadas placas, demasiada distancia" — 2 pasos
@@ -700,30 +702,64 @@
   // lista combinada: raycast de hover, toggle de visibilidad en renderBackdrop, glow por proximidad
   const allPlates=[...plates,...casePlates];
 
-  // ---- Signal Cloud: geometría GENUINAMENTE distinta a las placas (pedido explícito de Agus:
-  // "no la misma caja, algo diferente, una nube") — un cúmulo esférico de cristales icosaédricos
-  // por número, vía InstancedMesh (1 sola llamada de dibujo por cúmulo, ~16 sombras cada uno:
-  // barato). No usa frostGlass/backdrop — son sólidos pequeños, no vidrio plano, no lo necesitan.
-  function makeShardCluster(color,count){
-    const geo=new THREE.IcosahedronGeometry(0.075,0);
-    const mat=new THREE.MeshMatcapMaterial({matcap:sharedMatcap,color:new THREE.Color(color),transparent:true,opacity:0.82});
-    const mesh=new THREE.InstancedMesh(geo,mat,count);
+  // ---- PROOF dial: anillo de vidrio con marcas de graduación — reemplaza el cúmulo de
+  // cristales-confeti. Taste audit (2026-07-08) marcó 2 fallas concretas de esto: "cristales-
+  // confeti sin diseño" (formas geométricas crudas sin curar = look IA) y "texto flotante sin
+  // contención" (el número no vivía DENTRO de ninguna forma 3D, solo flotaba entre cristales
+  // sueltos). F5 del plan de rediseño, opción A elegida por Agus: cada número vive CONTENIDO en
+  // un dial de calibración (anillo + graduaciones tipo f-stop de lente) — semántica directa
+  // (calibrar=dial) y el MISMO material de vidrio (frostGlass) que el resto del sitio, no un
+  // objeto ajeno al sistema.
+  const DIAL_R=0.85, DIAL_TICKS=56, DIAL_MAJOR_EVERY=7;
+  function makeDialRing(color){
+    const geo=new THREE.TorusGeometry(DIAL_R,0.028,10,56);
+    const mat=frostGlass(sharedMatcap,color,{matcapWeight:0.32,neonStrength:0.7});
+    plateMaterials.push(mat);
+    return new THREE.Mesh(geo,mat);
+  }
+  // Ticks en gris cálido apagado (el mismo tono "caos" del resto del sitio, #8a8078) — 1 sola
+  // llamada InstancedMesh para las 56 graduaciones, color uniforme (matcap propio, sin
+  // vertexColors: probado en vivo con captura de Chrome que `setColorAt` en este InstancedMesh
+  // dejaba `gl.getError()`→1282 y el draw call moría en silencio, ningún tick se dibujaba —
+  // mismo síntoma que el bug de literales GLSL ya documentado. Fix: sin color por instancia; la
+  // única marca "mayor" (la lectura calibrada, en el color de marca) es un Mesh PLANO aparte,
+  // no instanced — 1 objeto no necesita el mecanismo de instancing.
+  function makeDialTicks(){
+    const geo=new THREE.BoxGeometry(0.016,0.09,0.018);
+    geo.translate(0,0.045,0);
+    const mat=new THREE.MeshMatcapMaterial({matcap:sharedMatcap,color:0x8a8078,transparent:true,opacity:0.85});
+    const mesh=new THREE.InstancedMesh(geo,mat,DIAL_TICKS);
     const dummy=new THREE.Object3D();
-    for(let i=0;i<count;i++){
-      const r=0.4+Math.random()*0.55;
-      const theta=Math.random()*Math.PI*2, phi=Math.acos(2*Math.random()-1);
-      dummy.position.set(r*Math.sin(phi)*Math.cos(theta), r*Math.sin(phi)*Math.sin(theta)*0.8, r*Math.cos(phi)*0.6);
-      dummy.rotation.set(Math.random()*Math.PI,Math.random()*Math.PI,Math.random()*Math.PI);
-      dummy.scale.setScalar(0.5+Math.random()*0.9);
+    for(let i=0;i<DIAL_TICKS;i++){
+      const a=(i/DIAL_TICKS)*Math.PI*2;
+      const isMajor=i%DIAL_MAJOR_EVERY===0;
+      dummy.position.set(Math.cos(a)*DIAL_R, Math.sin(a)*DIAL_R, 0);
+      dummy.rotation.set(0,0,a-Math.PI/2);
+      dummy.scale.set(1, isMajor?1.6:1, 1);
       dummy.updateMatrix();
       mesh.setMatrixAt(i,dummy.matrix);
     }
     mesh.instanceMatrix.needsUpdate=true;
     return mesh;
   }
-  const cloudGroups=CLOUD_STATS.map(s=>{
+  // la "aguja": 1 marca mayor en el color de marca de la etapa, apuntando a un ángulo fijo distinto
+  // por número — la lectura calibrada asomando entre el ruido gris, mismo concepto caos→señal
+  // que sostiene toda la pieza.
+  function makeDialNeedle(color, angle){
+    const geo=new THREE.BoxGeometry(0.016,0.09,0.018);
+    geo.translate(0,0.045,0);
+    const mat=new THREE.MeshMatcapMaterial({matcap:sharedMatcap,color,transparent:true,opacity:0.95});
+    const mesh=new THREE.Mesh(geo,mat);
+    mesh.position.set(Math.cos(angle)*DIAL_R, Math.sin(angle)*DIAL_R, 0);
+    mesh.rotation.z=angle-Math.PI/2;
+    mesh.scale.set(1.6,2.1,1.6);
+    return mesh;
+  }
+  const cloudGroups=CLOUD_STATS.map((s,i)=>{
     const group=new THREE.Group();
-    group.add(makeShardCluster(s.color, TIER.quality==='low'?9:16));
+    group.add(makeDialRing(s.color));
+    group.add(makeDialTicks());
+    group.add(makeDialNeedle(s.color, Math.PI*0.35+i*1.7));   // ángulo distinto por número, no alineados
     group.position.set(s.x, s.y, 0);
     scene.add(group);
     return group;
@@ -789,8 +825,9 @@
       mesh.position.set(0,0.15,0.15);      // centrado, apenas saliente de la cara + espacio para el nombre debajo
       plate.add(mesh);
     });
-    // ---- Signal Cloud: el número flota EN EL CENTRO de su cúmulo de cristales (no dentro de
-    // un vidrio) — mismo matcap de contraste, tamaño moderado (son 4 a la vez, no 1 protagonista).
+    // ---- PROOF dial: el número vive CONTENIDO en el centro del anillo (ver makeDialRing arriba)
+    // — mismo matcap de contraste cian-blanco, tamaño acotado para caber con margen dentro del
+    // radio interno del dial (DIAL_R=0.85 menos el grosor del tubo).
     CLOUD_STATS.forEach((s,i)=>{
       const group=cloudGroups[i];
       // BUG real encontrado con captura: este material usa frostGlass (necesita tBackdrop), pero
@@ -799,14 +836,15 @@
       // renderBackdrop() cada frame, igual que las placas de Method/Work.
       const hookMat=frostGlass(makeTextMatcap(), s.color, {matcapWeight:0.78, neonStrength:0.3});
       plateMaterials.push(hookMat);
-      const geo=new TextGeometry(s.hook,{font,size:0.46,height:0.13,curveSegments:6,
-        bevelEnabled:true,bevelThickness:0.02,bevelSize:0.014,bevelSegments:3});
+      const geo=new TextGeometry(s.hook,{font,size:0.38,height:0.12,curveSegments:6,
+        bevelEnabled:true,bevelThickness:0.018,bevelSize:0.012,bevelSegments:3});
       geo.computeBoundingBox();
       const w=geo.boundingBox.max.x-geo.boundingBox.min.x, h=geo.boundingBox.max.y-geo.boundingBox.min.y;
       geo.translate(-w/2,-h/2,0);
       const mesh=new THREE.Mesh(geo,hookMat);
-      const maxW=1.5;
+      const maxW=1.3;    // cabe con margen dentro del radio interno del dial (~1.64 de diámetro libre)
       if(w>maxW) mesh.scale.setScalar(maxW/w);
+      mesh.position.z=0.05;   // apenas adelante del plano del anillo/ticks
       group.add(mesh);
     });
     // BUG de herramienta de verificación encontrado hoy: en modo ?shot, el loop síncrono de
@@ -1017,15 +1055,16 @@
       caseProximity[i]=op;
     }
   }
-  // Signal Cloud: no hay "placa" que contener — ancho fijo razonable (ver CSS), anclado debajo
-  // de CADA número (no de un centro compartido) para que cada caption siga a su propio cristal.
+  // PROOF dial: ancho fijo razonable (ver CSS), anclado debajo del BORDE del dial (radio +
+  // ticks, no del centro) de CADA número — así el caption queda claramente fuera del anillo,
+  // nunca superpuesto con las graduaciones.
   const cloudCopyEls=[...document.querySelectorAll('.cloud-copy')];
   function dockCloudCopies(){
     if(isBeyondJourney()){ cloudCopyEls.forEach(el=>{ if(el){el.style.opacity=0; el.classList.remove('active');} }); return; }
     const gate=sectionGate(camLook.y, CLOUD_TOP_Y, CLOUD_BOTTOM_Y, GATE_FEATHER);
     for(let i=0;i<CLOUD_STATS.length;i++){
       const s=CLOUD_STATS[i], el=cloudCopyEls[i]; if(!el) continue;
-      const p=projectPoint(s.x, s.y-0.55, 0);
+      const p=projectPoint(s.x, s.y-1.15, 0);
       const w=el.offsetWidth;
       el.style.transform=`translate3d(${Math.round(p.x-w/2)}px,${Math.round(p.y)}px,0)`;
       const dist=Math.abs(camLook.y-s.y);
