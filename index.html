@@ -95,41 +95,20 @@
     nav .links a{font-size:.54rem;letter-spacing:.05em}
   }
 
-  /* ---- Método: 5 etapas. El TÍTULO ahora es geometría 3D hija de la placa (ver JS) — hereda
-     su movimiento automáticamente, con volumen y textura propia. El DOM solo lleva el párrafo
-     (caption legible) anclado bajo la placa cada frame (dockStageCopies()), + un h2 sr-only. ---- */
+  /* ---- Método: el TÍTULO y el CAPTION son AMBOS geometría 3D, hijos de la MISMA placa (ver JS,
+     FontLoader) — regla de Agus, repetida varias veces: "este texto no va aparte de la placa, es
+     parte de la placa". El DOM solo guarda el texto para lectores de pantalla (sr-only) — nada
+     visible flota nunca sobre el vidrio; eliminó de raíz los 3 bugs de "caption pegado sobre
+     Team" de esta sesión (no puede pegarse algo que ya no existe como capa aparte). ---- */
   .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
     clip:rect(0,0,0,0);white-space:nowrap;border:0}
   .stage{min-height:100vh;min-height:100svh}
-  /* BUG real señalado por Agus con captura: el caption solo tenía text-shadow, ningún fondo
-     propio — se leía como texto flotando SOBRE el vidrio, no una pieza embebida en él. Fix:
-     panel real (fondo+blur+borde) que ocupa el mismo rect proyectado — box-sizing:border-box
-     para que el padding no ensanche el ancho que ya fija JS (projectedWidth). */
-  .stage-copy{position:fixed;top:0;left:0;z-index:55;max-width:90vw;opacity:0;pointer-events:none;
-    box-sizing:border-box;will-change:transform,opacity,width;transition:opacity .5s var(--ease);
-    text-align:center;padding:1rem 1.3rem;border-radius:18px;
-    background:rgba(9,8,7,.46);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
-    border:1px solid rgba(242,239,233,.14);
-    text-shadow:0 2px 12px rgba(0,0,0,.85)}
-  .stage-copy.active{pointer-events:auto}
-  /* Fuente más grande + más clara: el caption es contenido, no una nota al pie del vidrio
-     (feedback de Agus). El ancho real lo fija JS cada frame (projectedWidth) para que quede
-     literalmente CONTENIDO dentro del panel, nunca desbordado. */
-  .stage-copy p{color:#eef2ef;font-size:clamp(1rem,1.7vw,1.22rem);line-height:1.48}
-  .case-name{display:block;margin-bottom:.4rem;color:var(--brand)}
-  /* Texto de contexto embebido en el MISMO panel (antes eran spans sticky sueltos, ".cloud-eyebrow"
-     y ".pair-theme" — flotaban sin anclarse a nada, feedback de Agus: "no quiero texto flotando
-     sin contexto"). Ahora viven DENTRO de cada panel ya anclado, como una línea más chica arriba. */
-  .panel-eyebrow{display:block;margin-bottom:.5rem;font-size:.66rem;letter-spacing:.14em;
-    text-transform:uppercase;color:#9a948c}
-  /* Work: placas más bajas (apaisadas) que Method — menos alto real debajo del hook 3D, la
-     fuente crece menos para no desbordar el borde inferior del vidrio. */
-  .case-copy p{font-size:clamp(.86rem,1.3vw,1rem);line-height:1.42}
+  .stage-copy{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+    clip:rect(0,0,0,0);white-space:nowrap;border:0}
 
   /* ---- Signal Cloud: los 4 números más fuertes en un objeto 3D distinto (dial de calibración,
-     no una placa más) — antes de Method. Los 4 captions se leen de a uno, docked como el resto. ---- */
+     no una placa más) — antes de Method. ---- */
   #signal .stage{min-height:100svh}
-  .cloud-copy p{font-size:clamp(.85rem,1.3vw,1rem);line-height:1.42;max-width:24ch;margin:0 auto}
   /* Method: 3 pasos (fusionados de 5) — sigue sin justificar una pantalla completa cada uno,
      "demasiada distancia" (feedback de Agus) — ritmo de scroll más corto. F6 (plan de rediseño,
      meta ≤6.5 pantallas totales): 66→60svh, el valor que pide el plan. */
@@ -187,7 +166,7 @@
   .site-footer{padding:2.4rem 6vw max(2.4rem,env(safe-area-inset-bottom));display:flex;justify-content:space-between;
     align-items:center;flex-wrap:wrap;gap:.6rem;position:relative;z-index:4;background:var(--bg)}
 
-  @media(prefers-reduced-motion:reduce){.grain{animation:none}.stage-copy{opacity:1;transform:none;transition:none}}
+  @media(prefers-reduced-motion:reduce){.grain{animation:none}}
 </style>
 </head>
 <body>
@@ -270,10 +249,8 @@
 
     <section id="work" aria-label="Work">
       <!-- 6 casos agrupados de a PARES por tema (mitad del scroll de 6 pantallas sueltas, más
-           narrativo). El número-resultado es geometría 3D hija de la placa; nombre+descripción
-           quedan en DOM, anclados bajo cada placa cada frame (dockCaseCopies, ver JS). El nombre
-           del tema (antes ".pair-theme" sticky, huérfano) ahora es la primera línea DENTRO de
-           cada panel ya anclado — nunca un span suelto sin contenedor. -->
+           narrativo). Número-resultado, tema+nombre y descripción son TODOS geometría 3D hija
+           de la placa (ver JS, FontLoader) — el DOM solo queda para lectores de pantalla. -->
       <div class="stage" data-pair="0">
         <div class="stage-copy case-copy">
           <span class="mono panel-eyebrow">Close &amp; Convert</span>
@@ -450,7 +427,7 @@
 
   // 5→3 pasos (fusionados): feedback de Agus, "demasiadas placas, demasiada distancia" — 2 pasos
   // cortos que compartían el mismo espíritu (descubrir+crear, ejecutar+medir) pasan a ser uno solo.
-  // Arrancan bien debajo de la nube (gap real, no encimados) — ver sectionGate() para el corte limpio.
+  // Arrancan bien debajo de la nube (gap real en Y, ver el chequeo numérico más abajo, no encimados).
   // OJO: la cámara ahora satura Z rápido y se queda CERCA durante todo el recorrido (fix de la
   // nube perdida en mobile) — a esa distancia, cualquier gap "vacío" entre secciones se siente
   // más largo que antes (mismo scroll, más zoom). Gaps apretados a propósito: cloud→method=3,
@@ -461,9 +438,12 @@
   // el mismo rango de Y. Shift de -3 a las 3 etapas (y todo lo que cuelga de STAGES.at(-1), como
   // CASES/hilo, más abajo) para dejar un gap limpio de ~1.75 unidades.
   const STAGES=[
-    {y:-15, x:-0.7, color:0x6b645c, lines:['UNDERSTAND','& CREATE']},          // Discovery+Strategy
-    {y:-20, x: 0.7, color:0xe8551e, lines:['SHIP &','MEASURE']},               // Implementation+Measurement
-    {y:-25, x:-0.5, color:0xff7a3d, lines:['THE SIGNAL','COMPOUNDS']},        // Signal
+    {y:-15, x:-0.7, color:0x6b645c, lines:['UNDERSTAND','& CREATE'], step:'Step 01',
+      caption:'Deep discovery on the business model, audience and funnel assets, then creative built at volume — ads varied up to 12× more often than standard, always on-brand.'},
+    {y:-20, x: 0.7, color:0xe8551e, lines:['SHIP &','MEASURE'], step:'Step 02',
+      caption:'Meticulous measurement plan, then fast implementation — speed is part of the strategy. Everything measurable gets measured and improved, so budget only follows what moves revenue.'},
+    {y:-25, x:-0.5, color:0xff7a3d, lines:['THE SIGNAL','COMPOUNDS'], step:'Step 03',
+      caption:'Winners get budget, losers get killed. The signal tells you exactly what to scale next — compounding every week the funnel keeps running.'},
   ];
   // ---- Work: 6 casos reales agrupados de a PARES por tema (mitad del scroll de 6 pantallas
   // sueltas — feedback de Agus tras ver el sitio: "hay que scrollear muchísimo", "condensar").
@@ -498,32 +478,18 @@
     const groupY=STAGES.at(-1).y-4-gi*PAIR_GAP;
     pair.cases.forEach((c,ci)=>{
       CASES.push(Object.assign({},c,{
+        theme: pair.theme,
         y: PAIR_SIDE ? groupY : groupY-ci*2.6,
         x: PAIR_SIDE ? (ci===0?-1.6:1.6) : 0,
       }));
     });
   });
 
-  // ---- BUG P0 real, visto con captura de Chrome (auditoría /taste 2026-07-08): los captions de
-  // la nube "sangraban" dentro de las placas de Method — la opacidad de cada sistema de docking
-  // (cloud/stage/case) se calculaba SOLO por distancia a SU PROPIO objeto (1-dist/5), sin importar
-  // si la cámara estaba realmente en esa sección. Con las 3 secciones a menos de 5 unidades entre
-  // sí, dos sistemas podían estar visibles a la vez. Fix: un gate DURO por sección — cada sistema
-  // solo puede mostrar texto si la cámara está dentro de su rango de Y (con una zona de fundido
-  // entre secciones para que no sea un corte brusco).
-  const CLOUD_TOP_Y=Math.max(...CLOUD_STATS.map(s=>s.y))+2;      // límite superior (nunca se usa, hero no dockea nada)
-  const CLOUD_BOTTOM_Y=(Math.min(...CLOUD_STATS.map(s=>s.y))+STAGES[0].y)/2;   // punto medio nube↔method
-  const METHOD_BOTTOM_Y=(STAGES.at(-1).y+CASES[0].y)/2;                       // punto medio method↔work
-  // BUG real encontrado con captura: al apretar los gaps entre secciones (fix de "viaje vacío
-  // muy largo"), la pluma de 3 unidades del gate quedaba MÁS ANCHA que el gap mismo — el caption
-  // de Work ya se filtraba (33% de opacidad) estando la cámara centrada en la ÚLTIMA placa de
-  // Method. Pluma más angosta: cierra del todo antes de llegar a la placa vecina, verificado.
-  const GATE_FEATHER=0.8;
-  function sectionGate(camY, topY, bottomY, feather){
-    const gTop=Math.min(1,Math.max(0,(topY+feather-camY)/feather));
-    const gBottom=Math.min(1,Math.max(0,(camY-(bottomY-feather))/feather));
-    return Math.min(gTop,gBottom);
-  }
+  // NOTA: acá antes vivía un sistema de "gates" por sección (sectionGate/CLOUD_BOTTOM_Y/
+  // METHOD_BOTTOM_Y/GATE_FEATHER) para controlar la opacidad de captions DOM dockeados por
+  // proyección de cámara. Ya no existe: los captions son geometría 3D hija de cada placa (ver
+  // FontLoader arriba) — se mueven y se ven exactamente como la placa misma, sin cálculo de
+  // visibilidad aparte, sin poder desincronizarse ni "sangrar" entre secciones nunca más.
 
   const threadPts=[new THREE.Vector3(0,5.5,-0.4)];
   threadPts.push(new THREE.Vector3(0, CLOUD_Y, -0.4));   // el hilo también pasa por la nube de señal
@@ -831,8 +797,55 @@
     x.fillStyle=g; x.fillRect(0,0,128,128);
     const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; return t;
   }
+  // BUG DE RAÍZ real, señalado por Agus varias veces ("este texto no va aparte de la placa, es
+  // parte de la placa"): el caption (párrafo) vivía en DOM, position:fixed, dockeado por
+  // proyección de cámara cada frame — por más panel/fondo que se le pusiera, seguía siendo una
+  // pieza APARTE que podía desincronizarse (los 3 bugs de "texto pegado sobre Team" de esta misma
+  // sesión vienen TODOS de esa arquitectura). Fix de raíz: el caption es geometría 3D, hija de la
+  // MISMA placa que el título — una sola pieza de verdad, sin docking, sin DOM, sin poder
+  // desincronizarse jamás. Material SÓLIDO (MeshBasicMaterial, sin frostGlass/backdrop, sin
+  // transparencia) — no compite con el vidrio, no se lava en hover: máximo contraste garantizado.
+  const bodyTextMat=new THREE.MeshBasicMaterial({color:0xf2efe9, toneMapped:false});
+  const eyebrowTextMat=new THREE.MeshBasicMaterial({color:0xff6a2b, toneMapped:false});
   new FontLoader().load('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/fonts/helvetiker_bold.typeface.json', (font)=>{
-    STAGES.forEach((s,i)=>{
+  // Wrap de texto REAL (no a ojo por cantidad de caracteres): arma cada línea agregando palabras
+  // hasta que la geometría medida (bounding box) se pasa del ancho disponible, recién ahí corta.
+  // Precisa porque usa la MISMA fuente/tamaño que se va a dibujar — nunca desborda el panel.
+  function wrapText(text,size,maxWidth){
+    // BUG real visto en screenshot: "×" (multiplicación) no existe en el glifario de helvetiker
+    // (ya documentado para los hooks "7X" en vez de "7×") — en el TÍTULO 3D se rompe en silencio,
+    // se ve como un signo de pregunta ("12? more"). El DOM sr-only conserva el "×" real (el
+    // lector de pantalla no tiene ese límite); solo la versión 3D lo cambia a "x".
+    text=text.replace(/×/g,'x');
+    const words=text.split(' '); const lines=[]; let current='';
+    for(const word of words){
+      const test=current?current+' '+word:word;
+      const g=new TextGeometry(test,{font,size,height:0.01,curveSegments:2});
+      g.computeBoundingBox();
+      const w=g.boundingBox.max.x-g.boundingBox.min.x;
+      g.dispose();
+      if(w>maxWidth && current){ lines.push(current); current=word; }
+      else current=test;
+    }
+    if(current) lines.push(current);
+    return lines;
+  }
+  // agrega un bloque de líneas ya wrappeadas como hijos 3D de `parent`, centrado horizontalmente,
+  // creciendo hacia ABAJO desde `topY` (no centrado verticalmente — más fácil de apilar bloques:
+  // eyebrow, título, body, uno debajo del otro con offsets fijos).
+  function addTextLines(parent,mat,lines,size,lineHeight,topY,maxW,z){
+    lines.forEach((line,li)=>{
+      const geo=new TextGeometry(line,{font,size,height:0.01,curveSegments:4});
+      geo.computeBoundingBox();
+      const w=geo.boundingBox.max.x-geo.boundingBox.min.x;
+      geo.translate(-w/2,0,0);
+      const mesh=new THREE.Mesh(geo,mat);
+      if(w>maxW) mesh.scale.setScalar(maxW/w);
+      mesh.position.set(0, topY-li*lineHeight, z);
+      parent.add(mesh);
+    });
+  }
+  STAGES.forEach((s,i)=>{
       const plate=plates[i];
       // BUG DE RAÍZ real encontrado con captura de Chrome (auditoría /taste): este material usa
       // frostGlass (necesita tBackdrop) pero NUNCA se agregaba a plateMaterials → tBackdrop
@@ -848,32 +861,40 @@
       // semi-transparente (60% opaco) y lo "lava". Fix: el texto casi opaco siempre — así lo que
       // cambia con el hover es el vidrio de ATRÁS, no el texto que hay que leer.
       titleMat.opacity=0.96;
-      const lineHeight=0.62, size=0.42, totalH=(s.lines.length-1)*lineHeight;
+      // Título achicado (pedido de Agus: "achica el título de la placa") — de protagonista único
+      // pasa a jerarquía (título+eyebrow+cuerpo, los 3 EN la placa) — libera alto real para el
+      // caption, que ahora es geometría 3D hija de la MISMA placa, no DOM aparte.
+      const lineHeight=0.40, size=0.27, totalH=(s.lines.length-1)*lineHeight, titleTopY=1.15;
       s.lines.forEach((line,li)=>{
         // OJO (bug real): la propiedad de profundidad de TextGeometry se llama "height", NO
         // "depth" (nombre heredado de una API vieja). "depth" no existe → default silencioso
         // a 50 → el texto se extruía 50 unidades en Z ("infinito", ilegible). Ver BIBLIOTECA-3D.md.
-        const geo=new TextGeometry(line,{font,size,height:0.14,curveSegments:6,
-          bevelEnabled:true,bevelThickness:0.02,bevelSize:0.014,bevelSegments:3});
+        const geo=new TextGeometry(line,{font,size,height:0.1,curveSegments:6,
+          bevelEnabled:true,bevelThickness:0.014,bevelSize:0.01,bevelSegments:3});
         geo.computeBoundingBox();
         const w=geo.boundingBox.max.x-geo.boundingBox.min.x;
         geo.translate(-w/2,0,0);          // centrado horizontal
         const mesh=new THREE.Mesh(geo,titleMat);
         const maxW=2.6;                    // nunca más ancho que la placa (3.1) — clamp de seguridad
         if(w>maxW) mesh.scale.setScalar(maxW/w);
-        mesh.position.set(0, totalH/2-li*lineHeight, 0.15);   // apenas saliente de la cara del vidrio
+        mesh.position.set(0, titleTopY+totalH/2-li*lineHeight, 0.15);   // apenas saliente de la cara del vidrio
         plate.add(mesh);
       });
+      // Eyebrow ("Step 0N") + cuerpo (caption completo, wrappeado de verdad) — AMBOS geometría 3D,
+      // hijos de la MISMA placa: una sola pieza, sin DOM, sin poder desincronizarse nunca.
+      addTextLines(plate, eyebrowTextMat, [s.step], 0.13, 0, 0.55, 2.4, 0.15);
+      const bodyLines=wrapText(s.caption, 0.15, 2.6);
+      addTextLines(plate, bodyTextMat, bodyLines, 0.15, 0.225, 0.28, 2.6, 0.15);
     });
-    // ---- Work: UNA sola palabra corta por placa (el número-resultado), más grande — es el
-    // protagonista de la placa apaisada. Misma técnica (hijo 3D + matcap propio + clamp de ancho).
+    // ---- Work: número-resultado (achicado, deja lugar real para tema+nombre+caption debajo,
+    // los 3 geometría 3D hija de la MISMA placa apaisada — mismo criterio que Method arriba).
     CASES.forEach((c,i)=>{
       const plate=casePlates[i];
       const hookMat=frostGlass(makeTextMatcap(), c.color, {matcapWeight:0.78, neonStrength:0.3});   // mismo bug/fix que titleMat arriba
       plateMaterials.push(hookMat);
       hookMat.opacity=0.96;   // mismo fix de contraste en hover que titleMat (ver arriba)
-      const geo=new TextGeometry(c.hook,{font,size:0.62,height:0.16,curveSegments:6,
-        bevelEnabled:true,bevelThickness:0.024,bevelSize:0.016,bevelSegments:3});
+      const geo=new TextGeometry(c.hook,{font,size:0.46,height:0.13,curveSegments:6,
+        bevelEnabled:true,bevelThickness:0.018,bevelSize:0.012,bevelSegments:3});
       geo.computeBoundingBox();
       const w=geo.boundingBox.max.x-geo.boundingBox.min.x;
       const h=geo.boundingBox.max.y-geo.boundingBox.min.y;
@@ -881,8 +902,11 @@
       const mesh=new THREE.Mesh(geo,hookMat);
       const maxW=PAIR_SIDE?2.1:3.5;        // placa angosta (2.6) o ancha (4.2) — clamp con margen
       if(w>maxW) mesh.scale.setScalar(maxW/w);
-      mesh.position.set(0,0.15,0.15);      // centrado, apenas saliente de la cara + espacio para el nombre debajo
+      mesh.position.set(0,0.62,0.15);      // arriba, deja lugar real debajo para tema+nombre+caption
       plate.add(mesh);
+      addTextLines(plate, eyebrowTextMat, [`${c.theme} — ${c.name}`], 0.115, 0, 0.1, PAIR_SIDE?2.15:3.6, 0.15);
+      const bodyLines=wrapText(c.caption, 0.13, PAIR_SIDE?2.15:3.6);
+      addTextLines(plate, bodyTextMat, bodyLines, 0.13, 0.195, -0.2, PAIR_SIDE?2.15:3.6, 0.15);
     });
     // ---- PROOF dial: el número vive CONTENIDO en el centro del anillo (ver makeDialRing arriba)
     // — mismo matcap de contraste cian-blanco, tamaño acotado para caber con margen dentro del
@@ -906,6 +930,13 @@
       if(w>maxW) mesh.scale.setScalar(maxW/w);
       mesh.position.z=0.05;   // apenas adelante del plano del anillo/ticks
       group.add(mesh);
+      // eyebrow+caption geometría 3D, hijos del group EXTERIOR (no del sub-group `spin` que gira)
+      // — debajo del anillo, mismo criterio que Method/Work. Tamaño compacto: el presupuesto
+      // vertical hasta la placa de Method vecina ya está ajustado (ver gap de STAGES arriba),
+      // 3 líneas máximo mantiene el alcance dentro de ese margen.
+      addTextLines(group, eyebrowTextMat, ['Proof, not promises'], 0.09, 0, -1.15, 2.0, 0.05);
+      const bodyLines=wrapText(s.caption, 0.095, 2.0);
+      addTextLines(group, bodyTextMat, bodyLines, 0.095, 0.13, -1.32, 2.0, 0.05);
     });
     // BUG de herramienta de verificación encontrado hoy: en modo ?shot, el loop síncrono de
     // frames corre INMEDIATAMENTE (misma tarea), mucho antes de que este callback de fuente
@@ -913,8 +944,7 @@
     // la última composer.render(), así que nunca aparecía en los screenshots de verificación
     // (?shot no arranca el loop rAF, nada vuelve a dibujar). Re-renderizar una vez acá si SHOT.
     if(SHOT){
-      camera.lookAt(camLook); dockCloudCopies(); dockStageCopies(); dockCaseCopies();
-      renderBackdrop(); composer.render();
+      camera.lookAt(camLook); renderBackdrop(); composer.render();
     }
   }, undefined, (err)=>console.warn('[amir] no se pudo cargar la fuente para los títulos 3D:',err));
 
@@ -990,29 +1020,11 @@
   const heroEl=document.querySelector('.hero');
   const methodEl=document.getElementById('method');
   const workEl=document.getElementById('work');
-  const teamEl=document.getElementById('team');
   const scrollCueEl=document.querySelector('.scroll-cue');
-  // BUG real (encontrado en vivo, 2 vueltas de fix): un booleano actualizado SOLO por el listener
-  // de scroll puede quedar desincronizado del scroll REAL si algo dispara un render() de más
-  // (rAF, resize) sin que haya habido un evento 'scroll' de por medio — el booleano decía
-  // "false" (el último estado bueno) mientras la placa ya estaba lejos. Fix definitivo: función
-  // que lee scrollY EN VIVO cada vez que se llama, nunca un booleano cacheado.
-  function isBeyondJourney(){ return scrollY>(workEl.offsetTop+workEl.offsetHeight); }
-  // BUG real señalado por Agus con captura (2 rondas): los captions de Work quedaban a opacidad
-  // PLENA superpuestos sobre las fotos de Team. El primer intento (fade sobre los últimos 500px
-  // de scroll ANTES de journeyBottom) seguía fallando: 500px es una constante fija que no tiene
-  // en cuenta el ALTO REAL del viewport — con una ventana más alta que 500px, el TOPE de Team ya
-  // puede estar VISIBLE en la mitad inferior de la pantalla mientras scrollY (el borde SUPERIOR
-  // del viewport) todavía está a más de 500px de journeyBottom, o sea el fade ni había arrancado.
-  // Fix real: medir contra el BORDE INFERIOR del viewport (scrollY+innerHeight) vs. el TOPE real
-  // de #team — la opacidad debe llegar a 0 con margen ANTES de que ese borde inferior alcance a
-  // Team, sin importar cuán alto sea el viewport.
-  const TAIL_FADE_LEAD_PX=500;    // empieza a apagarse cuando Team está a esta distancia de aparecer
-  const TAIL_FADE_SAFE_PX=200;    // debe llegar a 0 con ESTE margen antes de que Team sea visible
-  function tailFade(){
-    const distToTeam=teamEl.offsetTop-(scrollY+innerHeight);
-    return Math.max(0, Math.min(1, (distToTeam-TAIL_FADE_SAFE_PX)/(TAIL_FADE_LEAD_PX-TAIL_FADE_SAFE_PX)));
-  }
+  // NOTA: acá antes vivían isBeyondJourney()/tailFade() — gates para forzar a 0 la opacidad de
+  // captions DOM que podían quedar "pegados" sobre Team/Contact tras un salto de scroll rápido.
+  // Ya no existen: sin DOM dockeado no hay nada que pueda quedar pegado — el caption es parte
+  // de la placa, se mueve y se ve exactamente igual que ella, siempre.
   let progress=0, camTargetY=0.8, camTargetZ=9, camLookTargetY=0;
   function updateFromScroll(){
     // uOrder: el caos se calibra durante el Hero (para cuando aparece la nube de señal, la
@@ -1033,17 +1045,6 @@
     camTargetZ=lerp(9, 5.2, zProgress)*aspectZScale();
     camLookTargetY=lerp(0, lastPlateY, progress);
     if(scrollCueEl) scrollCueEl.style.opacity=scrollY>heroEl.offsetHeight*0.35?0:1;
-    // BUG real encontrado con captura de Chrome: los captions (cloud/method/case) solo se
-    // recalculan dentro de render(), que corre por rAF — si el usuario salta rápido de scroll
-    // (nav, fling) más lejos de lo que la cámara suavizada (lerp 6%/frame) alcanzó a seguir, un
-    // caption viejo puede quedar "pegado" y visible sobre Team/Contact (DOM puro, sin cámara 3D).
-    // Fix: gate DURO por posición de scroll REAL (no por camLook.y, que puede estar atrasado) —
-    // más allá de Work, ningún caption puede mostrarse, sin importar en qué esté el lerp.
-    if(isBeyondJourney()){
-      cloudCopyEls.forEach(el=>{ el.style.opacity=0; el.classList.remove('active'); });
-      stageCopyEls.forEach(el=>{ el.style.opacity=0; el.classList.remove('active'); });
-      caseCopyEls.forEach(el=>{ el.style.opacity=0; el.classList.remove('active'); });
-    }
   }
   addEventListener('scroll',updateFromScroll,{passive:true});
 
@@ -1071,91 +1072,15 @@
     addEventListener('mouseleave',()=>hazeEl.classList.remove('on'));
   }
 
-  // ---- Docking: el texto se ancla cada frame al borde proyectado de SU placa 3D ----
-  // (texto + placa = una sola pieza; reemplaza el IntersectionObserver, que solo prendía/apagaba
-  // opacidad sin relación real con dónde estaba la placa en pantalla).
-  // BUG DE RAÍZ real encontrado con captura de Chrome: '.stage-copy' es la clase BASE compartida
-  // (también la llevan .cloud-copy y .case-copy, para heredar el mismo estilo) — querySelectorAll
-  // devolvía LOS 13 elementos mezclados, y dockStageCopies() indexaba stageCopyEls[0..2] pensando
-  // que eran los 3 captions de Method: en realidad eran los primeros 3 DIVs de .cloud-copy. Por
-  // eso el caption de un número de la nube aparecía posicionado/visible como si fuera de Method.
-  // Fix: clase propia '.method-copy' solo en los 3 captions reales de Method.
-  const stageCopyEls=[...document.querySelectorAll('.method-copy')];
-  const _projV=new THREE.Vector3();
-  function projectPoint(x,y,z){
-    _projV.set(x,y,z).project(camera);
-    return { x:(_projV.x*0.5+0.5)*innerWidth, y:(1-(_projV.y*0.5+0.5))*innerHeight };
-  }
-  // ancho disponible REAL en pantalla del interior de la placa (con un inset para que el texto
-  // no toque el borde de vidrio) — el caption se dimensiona a esto cada frame, así queda
-  // literalmente CONTENIDO en el panel (antes se salía por fuera con un ancho fijo en ch).
-  function projectedWidth(x,y,halfWidth){
-    const l=projectPoint(x-halfWidth,y,0).x, r=projectPoint(x+halfWidth,y,0).x;
-    return Math.max(80, r-l);
-  }
-  // proximidad de cámara a cada etapa (0..1) — se reusa para el glow neón en touch, donde no
-  // existe mousemove/hover: la placa más cercana al centro de la pantalla se ilumina sola.
+  // proximidad de cámara a cada etapa/caso (0..1) — se usa para el glow neón en touch, donde no
+  // existe mousemove/hover: la placa más cercana al centro de la pantalla se ilumina sola. Ya no
+  // hay DOM que dockear (el caption es geometría 3D hija de la placa) — esto es solo la
+  // distancia cámara↔placa, sin proyección ni manipulación de elementos.
   const stageProximity=new Array(STAGES.length).fill(0);
-  const STAGE_HALFW=3.1/2*0.8;   // 80% del medio-ancho de la placa: margen interno de aire
-  function dockStageCopies(){
-    // BUG real (2da vuelta): el forzado a 0 en updateFromScroll() no alcanzaba solo — si el rAF
-    // corre DESPUÉS (aunque sea 1 frame suelto) con camLook.y todavía sin converger del todo,
-    // este mismo dock recalculaba un valor >0 y lo pisaba. El guard tiene que estar ACÁ también.
-    if(isBeyondJourney()){ stageCopyEls.forEach(el=>{ if(el){el.style.opacity=0; el.classList.remove('active');} }); return; }
-    const gate=sectionGate(camLook.y, CLOUD_BOTTOM_Y, METHOD_BOTTOM_Y, GATE_FEATHER);
-    for(let i=0;i<STAGES.length;i++){
-      const s=STAGES[i], el=stageCopyEls[i]; if(!el) continue;
-      // el TÍTULO 3D vive en la mitad superior del vidrio; el caption se ancla DEBAJO del título
-      // pero DENTRO del borde inferior de la placa — antes quedaba afuera, "sobre" el vidrio, no
-      // parte de él (feedback de Agus con captura).
-      const availW=projectedWidth(s.x,s.y,STAGE_HALFW);
-      const c=projectPoint(s.x, s.y-1.1, 0);
-      el.style.width=Math.round(availW)+'px';
-      const tx=c.x-availW/2, ty=c.y;
-      el.style.transform=`translate3d(${Math.round(tx)}px,${Math.round(ty)}px,0)`;
-      const dist=Math.abs(camLook.y-s.y);
-      const op=Math.max(0,Math.min(1,1-dist/5))*gate;   // gate: nunca visible fuera de Method (fix bleed)
-      el.style.opacity=op; el.classList.toggle('active',op>0.55);
-      stageProximity[i]=op;
-    }
-  }
-  // Work: misma técnica — caption dentro del borde inferior de cada placa (angosta o ancha
-  // según PAIR_SIDE), ancho dinámico según el ancho real de ESA placa.
-  const caseCopyEls=[...document.querySelectorAll('.case-copy')];
   const caseProximity=new Array(CASES.length).fill(0);
-  const CASE_HALFW=(PAIR_SIDE?2.6:4.2)/2*0.82;
-  const CASE_ANCHOR_Y=-3.0/2*0.2;   // ~20% del medio-alto hacia abajo del centro — deja lugar real debajo con margen
-  function dockCaseCopies(){
-    if(isBeyondJourney()){ caseCopyEls.forEach(el=>{ if(el){el.style.opacity=0; el.classList.remove('active');} }); return; }
-    const gate=sectionGate(camLook.y, METHOD_BOTTOM_Y, CASES.at(-1).y-100, GATE_FEATHER);
-    for(let i=0;i<CASES.length;i++){
-      const c=CASES[i], el=caseCopyEls[i]; if(!el) continue;
-      const availW=projectedWidth(c.x,c.y,CASE_HALFW);
-      const p=projectPoint(c.x, c.y+CASE_ANCHOR_Y, 0);
-      el.style.width=Math.round(availW)+'px';
-      el.style.transform=`translate3d(${Math.round(p.x-availW/2)}px,${Math.round(p.y)}px,0)`;
-      const dist=Math.abs(camLook.y-c.y);
-      const op=Math.max(0,Math.min(1,1-dist/5))*gate*tailFade();   // gate+cola: nunca visible fuera de Work, y se apaga ANTES de que Team aparezca en el viewport
-      el.style.opacity=op; el.classList.toggle('active',op>0.55);
-      caseProximity[i]=op;
-    }
-  }
-  // PROOF dial: ancho fijo razonable (ver CSS), anclado debajo del BORDE del dial (radio +
-  // ticks, no del centro) de CADA número — así el caption queda claramente fuera del anillo,
-  // nunca superpuesto con las graduaciones.
-  const cloudCopyEls=[...document.querySelectorAll('.cloud-copy')];
-  function dockCloudCopies(){
-    if(isBeyondJourney()){ cloudCopyEls.forEach(el=>{ if(el){el.style.opacity=0; el.classList.remove('active');} }); return; }
-    const gate=sectionGate(camLook.y, CLOUD_TOP_Y, CLOUD_BOTTOM_Y, GATE_FEATHER);
-    for(let i=0;i<CLOUD_STATS.length;i++){
-      const s=CLOUD_STATS[i], el=cloudCopyEls[i]; if(!el) continue;
-      const p=projectPoint(s.x, s.y-1.15, 0);
-      const w=el.offsetWidth;
-      el.style.transform=`translate3d(${Math.round(p.x-w/2)}px,${Math.round(p.y)}px,0)`;
-      const dist=Math.abs(camLook.y-s.y);
-      const op=Math.max(0,Math.min(1,1-dist/5))*gate;   // gate: nunca visible fuera de Signal (fix bleed)
-      el.style.opacity=op; el.classList.toggle('active',op>0.55);
-    }
+  function updateProximity(){
+    for(let i=0;i<STAGES.length;i++) stageProximity[i]=Math.max(0,Math.min(1,1-Math.abs(camLook.y-STAGES[i].y)/5));
+    for(let i=0;i<CASES.length;i++) caseProximity[i]=Math.max(0,Math.min(1,1-Math.abs(camLook.y-CASES[i].y)/5));
   }
 
   const clock=new THREE.Clock(); let frames=0;
@@ -1192,7 +1117,7 @@
     // los diales de PROOF giran lentamente (pedido de Agus) — solo el sub-group ring+ticks+aguja,
     // el número queda quieto y derecho (ver comentario en cloudGroups).
     cloudGroups.forEach(g=>{ g.userData.spin.rotation.z=t*g.userData.spinSpeed; });
-    dockCloudCopies(); dockStageCopies(); dockCaseCopies();   // texto anclado al borde proyectado de su placa — una sola pieza
+    updateProximity();   // solo para el glow neón en touch — el caption ya no depende de esto
     // hover neón: en mouse, la placa apuntada se enciende a full. En touch no hay mousemove
     // (nunca se dispara), así que la reemplazamos por un glow suave y automático basado en
     // proximidad de scroll — la placa que está "al frente" en ese momento se ilumina sola.
@@ -1209,7 +1134,7 @@
     requestAnimationFrame(render);
   }
   updateFromScroll();
-  camera.lookAt(camLook); dockCloudCopies(); dockStageCopies(); dockCaseCopies();   // evita el flash de posición (0,0) en el primer frame
+  camera.lookAt(camLook); updateProximity();   // evita el flash de posición (0,0) en el primer frame
   if(SHOT){
     // Captura: render SÍNCRONO (sin rAF, que se throttlea a ~1fps en tabs de background).
     // Con la cámara/uOrder ya fijados no hace falta converger nada — 3 frames alcanzan.
@@ -1218,11 +1143,11 @@
       uniforms.uTime.value=i*0.03; uniforms.uForce.value*=0.94;
       threadUniforms.uTime.value=i*0.03;
       cloudGroups.forEach(g=>{ g.userData.spin.rotation.z=(i*0.03)*g.userData.spinSpeed; });
-      camera.lookAt(camLook); dockCloudCopies(); dockStageCopies(); dockCaseCopies(); renderBackdrop(); composer.render();
+      camera.lookAt(camLook); renderBackdrop(); composer.render();
     }
     console.log('[amir] shot listo (sync)');
   } else render();
-  if(params.has('debug')) window.__amirDebug={camera,plates,casePlates,cloudGroups,STAGES,CASES,CASE_PAIRS,CLOUD_STATS,PAIR_SIDE,projectPoint,aspectZScale,TIER,TOUCH,
+  if(params.has('debug')) window.__amirDebug={camera,plates,casePlates,cloudGroups,STAGES,CASES,CASE_PAIRS,CLOUD_STATS,PAIR_SIDE,aspectZScale,TIER,TOUCH,
     updateFromScroll,methodEl,workEl,heroEl,camLook,get progress(){return progress},get camTargetY(){return camTargetY},
     get camTargetZ(){return camTargetZ},get uOrder(){return uniforms.uOrder.value}}; // solo verificación
   console.log('[amir] hero + método + work listo ·',N,'partículas ·',STAGES.length,'placas method ·',CASES.length,'placas work');
