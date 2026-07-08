@@ -61,7 +61,13 @@
   nav .links a:hover::after{transform:scaleX(1)}
   nav .links a:hover{color:var(--cyan)}
 
-  .hero{min-height:100vh;min-height:100svh;display:flex;flex-direction:column;justify-content:center;padding:0 6vw}
+  /* BUG real señalado por Agus con captura mobile: en viewports muy bajos (~380px de alto o
+     menos — teléfono en landscape, o toolbar del navegador expandida), el contenido del Hero
+     (eyebrow+h1+sub+CTA) supera el alto disponible, y `justify-content:center` lo desborda
+     PAREJO hacia arriba Y abajo — el CTA terminaba por encima del nav fijo. Fix: `safe center`
+     (soportado en navegadores modernos) — intenta centrar, pero si no entra, ancla arriba en vez
+     de desbordar por los dos lados. Verificado: 375×812/500/380, sin overlap en ningún caso. */
+  .hero{min-height:100vh;min-height:100svh;display:flex;flex-direction:column;justify-content:safe center;padding:5rem 6vw 1.5rem 6vw}
   .hero .eyebrow{margin-bottom:1.6rem}
   .hero h1{font-weight:700;letter-spacing:-.035em;line-height:.92;font-size:clamp(2.2rem,10.5vw,11rem);max-width:15ch}
   .hero h1 .accent{color:var(--brand)}
@@ -360,6 +366,7 @@
   import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
   import { FontLoader } from 'three/addons/loaders/FontLoader.js';
   import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
+  import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
   const REDUCE=matchMedia('(prefers-reduced-motion:reduce)').matches;
   const TOUCH=matchMedia('(pointer:coarse)').matches;
@@ -380,6 +387,10 @@
     if(small) return{dpr:Math.min(devicePixelRatio,1),count:5000,quality:'low',blurTaps:1,bloom:0.3};
     if(TOUCH) return{dpr:Math.min(devicePixelRatio,1.25),count:8000,quality:'mid',blurTaps:3,bloom:0.38};
     return{dpr:Math.min(devicePixelRatio,1.5),count:9000,quality:'high',blurTaps:5,bloom:0.45};})();
+  // Tier bajo (mobile) corre menos fps bajo carga → menos frames disponibles para que el lerp de
+  // cámara alcance su target, lo que se percibe como "el scroll responde lento/con gap". Compensar
+  // con un lerp más agresivo por frame (12% vs 6%) cierra la distancia en menos frames.
+  const CAM_LERP=TIER.quality==='low'?0.12:0.06;
   // Work: ¿los 2 casos de cada par van lado a lado (desktop/tablet) o apilados centrados
   // (mobile angosto)? Decidido UNA vez al cargar (mismo patrón que TIER) — lado a lado necesita
   // presupuesto de frustum horizontal que un portrait angosto no tiene (ver CASES más abajo).
@@ -820,7 +831,13 @@
     const words=text.split(' '); const lines=[]; let current='';
     for(const word of words){
       const test=current?current+' '+word:word;
-      const g=new TextGeometry(test,{font,size,height:0.01,curveSegments:2});
+      // BUG real de performance encontrado (sitio pesado/lento en mobile, señalado por Agus):
+      // TextGeometry hereda de ExtrudeGeometry, cuyo default es bevelEnabled:true con
+      // bevelThickness:0.2 — MUCHO más grueso que el height:0.01 de este texto (pensado para
+      // quedar casi plano). El bevel agregaba anillos de geometría alrededor de CADA letra sin
+      // ningún beneficio visual (texto tan fino no necesita bisel) — medido: 101 meshes / 360K
+      // triángulos solo en captions. `bevelEnabled:false` explícito, acá y en addTextLines.
+      const g=new TextGeometry(test,{font,size,height:0.01,curveSegments:2,bevelEnabled:false});
       g.computeBoundingBox();
       const w=g.boundingBox.max.x-g.boundingBox.min.x;
       g.dispose();
@@ -833,17 +850,26 @@
   // agrega un bloque de líneas ya wrappeadas como hijos 3D de `parent`, centrado horizontalmente,
   // creciendo hacia ABAJO desde `topY` (no centrado verticalmente — más fácil de apilar bloques:
   // eyebrow, título, body, uno debajo del otro con offsets fijos).
+  // BUG real de performance (mobile "super lento", señalado por Agus): antes, cada línea era un
+  // Mesh aparte — un caption de 6 líneas = 6 draw calls, ×13 captions en el sitio = ~50-90 draw
+  // calls extra que no existían cuando el texto era DOM. Fix: bakear el ancho/centrado/posición
+  // de CADA línea directo en su geometría (`.scale()`/`.translate()`, antes de crear el mesh) y
+  // fusionar todas las líneas de un caption en UNA sola BufferGeometry — 1 draw call por caption,
+  // sin importar cuántas líneas tenga. `bevelEnabled:false` (ver wrapText) también reduce
+  // triángulos por letra ~4-5x.
   function addTextLines(parent,mat,lines,size,lineHeight,topY,maxW,z){
-    lines.forEach((line,li)=>{
-      const geo=new TextGeometry(line,{font,size,height:0.01,curveSegments:4});
+    const geos=lines.map((line,li)=>{
+      const geo=new TextGeometry(line,{font,size,height:0.01,curveSegments:4,bevelEnabled:false});
       geo.computeBoundingBox();
       const w=geo.boundingBox.max.x-geo.boundingBox.min.x;
-      geo.translate(-w/2,0,0);
-      const mesh=new THREE.Mesh(geo,mat);
-      if(w>maxW) mesh.scale.setScalar(maxW/w);
-      mesh.position.set(0, topY-li*lineHeight, z);
-      parent.add(mesh);
+      geo.translate(-w/2,0,0);                                    // centrado horizontal, ANTES de escalar
+      if(w>maxW){ const s=maxW/w; geo.scale(s,s,1); }              // clamp de ancho baked-in
+      geo.translate(0, topY-li*lineHeight, z);                     // posición final de esta línea
+      return geo;
     });
+    const merged=mergeGeometries(geos,false);
+    geos.forEach(g=>g.dispose());
+    parent.add(new THREE.Mesh(merged,mat));
   }
   STAGES.forEach((s,i)=>{
       const plate=plates[i];
@@ -1025,6 +1051,26 @@
   // captions DOM que podían quedar "pegados" sobre Team/Contact tras un salto de scroll rápido.
   // Ya no existen: sin DOM dockeado no hay nada que pueda quedar pegado — el caption es parte
   // de la placa, se mueve y se ve exactamente igual que ella, siempre.
+  // BUG real (Agus: "la distancia entre elementos", en mobile Y desktop por igual — no es un tema
+  // de fps). Medido con __amirDebug + fetch del DOM real: el viejo mapeo era UN SOLO lerp lineal
+  // de scrollY→Y a lo largo de TODO el viaje (Signal+Method+Work), pero cada sección tiene un
+  // ratio scroll-px-por-Y-unit distinto. Resultado medido: el primer dial de Signal no aparecía
+  // hasta ~78% del scroll de esa sección (viaje "vacío" y=0→-7.8 consumía casi toda la sección),
+  // y el último título de Method llegaba recién al 83% de SU sección — sensación de "vacío antes,
+  // apretado después" en cada tramo. Fix: 3 tramos, cada sección mapea su PROPIO rango de scroll
+  // 1:1 al rango de Y que realmente ocupa su contenido (sin viaje muerto, sin compresión al final).
+  const CLOUD_Y_START=Math.max(...CLOUD_STATS.map(s=>s.y)); // dial más superficial (primero en aparecer)
+  const CLOUD_Y_END=Math.min(...CLOUD_STATS.map(s=>s.y));   // dial más profundo
+  const METHOD_Y_END=STAGES.at(-1).y; // última placa de Method
+  // La nube (Signal) queda MUY lejos del look-target inicial (y=0, fin del Hero) comparada con su
+  // propia profundidad de contenido (CLOUD_Y_START→CLOUD_Y_END, solo ~3 unidades) — un lerp 1:1
+  // gastaba el 71% del scroll de la sección viajando por el vacío antes del primer dial (medido:
+  // primer dial recién a los 375svh, ~78% de esa sección). Method/Work no tienen este problema
+  // (su "viaje de acercamiento" ya es una fracción chica de su propio rango — medido ~29%, ok).
+  // Fix SOLO para Signal: reservar nada más que un 25% de su scroll al viaje de acercamiento
+  // (y=0→CLOUD_Y_START) y el 75% restante a atravesar el cluster real de diales — así los 4
+  // números quedan en pantalla la mayor parte del scroll de esa sección, no comprimidos al final.
+  const CLOUD_APPROACH_FRAC=0.25;
   let progress=0, camTargetY=0.8, camTargetZ=9, camLookTargetY=0;
   function updateFromScroll(){
     // uOrder: el caos se calibra durante el Hero (para cuando aparece la nube de señal, la
@@ -1032,6 +1078,7 @@
     const preMethodRange=Math.max(1, heroEl.offsetHeight-innerHeight*0.3);
     uniforms.uOrder.value=Math.min(scrollY/preMethodRange,1);
     // progress: dentro del rango scrolleable combinado de #signal+#method+#work (un solo viaje).
+    // Sigue existiendo para camTargetY/Z (framing suave, no necesita trackear contenido exacto).
     const journeyTop=heroEl.offsetHeight;
     const journeyBottom=workEl.offsetTop+workEl.offsetHeight;
     const journeyScrollable=Math.max(1, journeyBottom-innerHeight-journeyTop);
@@ -1043,7 +1090,20 @@
     // de "más impacto"). Satura rápido (como uOrder) — de cerca desde el principio del recorrido.
     const zProgress=Math.min(1, progress*14);
     camTargetZ=lerp(9, 5.2, zProgress)*aspectZScale();
-    camLookTargetY=lerp(0, lastPlateY, progress);
+    // camLookTargetY SÍ necesita trackear contenido real → mapeo por tramos, uno por sección DOM.
+    const methodTop=methodEl.offsetTop, workTop=workEl.offsetTop;
+    if(scrollY<methodTop){
+      const p=Math.max(0,Math.min(1,(scrollY-journeyTop)/Math.max(1,methodTop-journeyTop)));
+      camLookTargetY = p<CLOUD_APPROACH_FRAC
+        ? lerp(0, CLOUD_Y_START, p/CLOUD_APPROACH_FRAC)
+        : lerp(CLOUD_Y_START, CLOUD_Y_END, (p-CLOUD_APPROACH_FRAC)/(1-CLOUD_APPROACH_FRAC));
+    }else if(scrollY<workTop){
+      const p=Math.max(0,Math.min(1,(scrollY-methodTop)/Math.max(1,workTop-methodTop)));
+      camLookTargetY=lerp(CLOUD_Y_END, METHOD_Y_END, p);
+    }else{
+      const p=Math.max(0,Math.min(1,(scrollY-workTop)/Math.max(1,journeyBottom-workTop)));
+      camLookTargetY=lerp(METHOD_Y_END, lastPlateY, p);
+    }
     if(scrollCueEl) scrollCueEl.style.opacity=scrollY>heroEl.offsetHeight*0.35?0:1;
   }
   addEventListener('scroll',updateFromScroll,{passive:true});
@@ -1109,10 +1169,16 @@
     const t=clock.getElapsedTime();
     uniforms.uTime.value=t; uniforms.uForce.value*=0.94;
     threadUniforms.uTime.value=t;
-    camera.position.y+=(camTargetY-camera.position.y)*0.06;
-    camera.position.z+=(camTargetZ-camera.position.z)*0.06;
-    camera.position.x+=((progress<0.14?pointerX*1.4:0)-camera.position.x)*0.06;
-    camLook.y+=(camLookTargetY-camLook.y)*0.06;
+    // BUG real señalado por Agus ("en mobile el scroll se siente lento"): el lerp de cámara
+    // converge un 6% POR FRAME, no por scroll — en mobile, con menos fps (más presión de GPU),
+    // corren menos frames en el mismo tiempo real, así que la cámara tarda MÁS TIEMPO DE RELOJ en
+    // alcanzar el scroll actual, sintiéndose como si "el scroll no respondiera" o fuera lento,
+    // aunque el scroll nativo del OS sea normal. Fix: lerp más agresivo en tier bajo — compensa
+    // teniendo MENOS frames disponibles con un salto más grande por frame.
+    camera.position.y+=(camTargetY-camera.position.y)*CAM_LERP;
+    camera.position.z+=(camTargetZ-camera.position.z)*CAM_LERP;
+    camera.position.x+=((progress<0.14?pointerX*1.4:0)-camera.position.x)*CAM_LERP;
+    camLook.y+=(camLookTargetY-camLook.y)*CAM_LERP;
     camera.lookAt(camLook);
     // los diales de PROOF giran lentamente (pedido de Agus) — solo el sub-group ring+ticks+aguja,
     // el número queda quieto y derecho (ver comentario en cloudGroups).
