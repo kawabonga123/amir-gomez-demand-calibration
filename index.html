@@ -884,7 +884,7 @@
   const methodEl=document.getElementById('method');
   const workEl=document.getElementById('work');
   const scrollCueEl=document.querySelector('.scroll-cue');
-  let progress=0, camTargetY=0.8, camTargetZ=9, camLookTargetY=0;
+  let progress=0, camTargetY=0.8, camTargetZ=9, camLookTargetY=0, beyondJourney=false;
   function updateFromScroll(){
     // uOrder: el caos se calibra durante el Hero (para cuando aparece la nube de señal, la
     // demanda ya está "ordenada" — refuerza el mensaje, no es solo decorativo).
@@ -904,6 +904,18 @@
     camTargetZ=lerp(9, 5.2, zProgress)*aspectZScale();
     camLookTargetY=lerp(0, lastPlateY, progress);
     if(scrollCueEl) scrollCueEl.style.opacity=scrollY>heroEl.offsetHeight*0.35?0:1;
+    // BUG real encontrado con captura de Chrome: los captions (cloud/method/case) solo se
+    // recalculan dentro de render(), que corre por rAF — si el usuario salta rápido de scroll
+    // (nav, fling) más lejos de lo que la cámara suavizada (lerp 6%/frame) alcanzó a seguir, un
+    // caption viejo puede quedar "pegado" y visible sobre Team/Contact (DOM puro, sin cámara 3D).
+    // Fix: gate DURO por posición de scroll REAL (no por camLook.y, que puede estar atrasado) —
+    // más allá de Work, ningún caption puede mostrarse, sin importar en qué esté el lerp.
+    beyondJourney=scrollY>journeyBottom;
+    if(beyondJourney){
+      cloudCopyEls.forEach(el=>{ el.style.opacity=0; el.classList.remove('active'); });
+      stageCopyEls.forEach(el=>{ el.style.opacity=0; el.classList.remove('active'); });
+      caseCopyEls.forEach(el=>{ el.style.opacity=0; el.classList.remove('active'); });
+    }
   }
   addEventListener('scroll',updateFromScroll,{passive:true});
 
