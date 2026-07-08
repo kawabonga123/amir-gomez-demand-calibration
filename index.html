@@ -20,6 +20,9 @@
     --ease:cubic-bezier(0.16,1,0.3,1);
     --bg:#050608; --fg:#f2efe9; --muted:#7d8a86;
     --brand:#ff6a2b; --brand-deck:#d8551e; --chaos:#8a8078;
+    /* cian: acento ESCASO (feedback de Agus) — solo en CTAs y hover de nav, no reemplaza al
+       naranja como color de marca. El texto 3D (títulos/hooks) ya lo usa vía makeTextMatcap. */
+    --cyan:#4dffd0;
   }
   *{margin:0;padding:0;box-sizing:border-box}
   html{-webkit-font-smoothing:antialiased}
@@ -53,10 +56,10 @@
   nav .links{display:flex;gap:2.2rem}
   nav .links a{position:relative;color:var(--fg);text-decoration:none;font-family:'Space Mono',monospace;
     font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;padding-bottom:.25rem;white-space:nowrap}
-  nav .links a::after{content:'';position:absolute;left:0;bottom:0;width:100%;height:1px;background:var(--brand);
+  nav .links a::after{content:'';position:absolute;left:0;bottom:0;width:100%;height:1px;background:var(--cyan);
     transform:scaleX(0);transform-origin:left;transition:transform .4s var(--ease)}
   nav .links a:hover::after{transform:scaleX(1)}
-  nav .links a:hover{color:var(--brand)}
+  nav .links a:hover{color:var(--cyan)}
 
   .hero{min-height:100vh;min-height:100svh;display:flex;flex-direction:column;justify-content:center;padding:0 6vw}
   .hero .eyebrow{margin-bottom:1.6rem}
@@ -67,9 +70,9 @@
     border-radius:2rem;background:var(--brand);color:#1a0d02;font-weight:700;text-decoration:none;font-size:.95rem;
     width:max-content;overflow:hidden;isolation:isolate;
     transition:transform .5s var(--ease),box-shadow .5s var(--ease)}
-  .cta::before{content:'';position:absolute;inset:0;z-index:-1;background:var(--fg);
+  .cta::before{content:'';position:absolute;inset:0;z-index:-1;background:var(--cyan);
     transform:translateX(-100%);transition:transform .5s var(--ease)}
-  .cta:hover{transform:translateY(-3px) scale(1.03);box-shadow:0 12px 34px -8px rgba(255,106,43,.5)}
+  .cta:hover{transform:translateY(-3px) scale(1.03);box-shadow:0 12px 34px -8px rgba(77,255,208,.45)}
   .cta:hover::before{transform:translateX(0)}
   .cta:active{transform:translateY(-1px) scale(.98)}
   .cta svg,.cta span{position:relative}
@@ -98,22 +101,35 @@
   .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
     clip:rect(0,0,0,0);white-space:nowrap;border:0}
   .stage{min-height:100vh;min-height:100svh}
-  .stage-copy{position:fixed;top:0;left:0;z-index:55;width:min(30ch,80vw);opacity:0;pointer-events:none;
-    will-change:transform,opacity;transition:opacity .5s var(--ease);text-align:center;
+  .stage-copy{position:fixed;top:0;left:0;z-index:55;max-width:90vw;opacity:0;pointer-events:none;
+    will-change:transform,opacity,width;transition:opacity .5s var(--ease);text-align:center;
     text-shadow:0 2px 16px rgba(0,0,0,.95),0 0 3px rgba(0,0,0,.95)}
   .stage-copy.active{pointer-events:auto}
-  .stage-copy p{color:#d3dbd8;font-size:.92rem;line-height:1.5}
-  .case-name{display:block;margin-bottom:.5rem;color:var(--brand)}
-  /* Method: pasos cortos (2 palabras + 1 oración) no justifican una pantalla completa cada uno —
-     acortamos el ritmo de scroll (no afecta a Work, que usa la misma clase .stage). */
-  #method .stage{min-height:78svh}
+  /* Fuente más grande + más clara: el caption es contenido, no una nota al pie del vidrio
+     (feedback de Agus). El ancho real lo fija JS cada frame (projectedWidth) para que quede
+     literalmente CONTENIDO dentro del panel, nunca desbordado. */
+  .stage-copy p{color:#eef2ef;font-size:clamp(1rem,1.7vw,1.22rem);line-height:1.48}
+  .case-name{display:block;margin-bottom:.4rem;color:var(--brand)}
+  /* Work: placas más bajas (apaisadas) que Method — menos alto real debajo del hook 3D, la
+     fuente crece menos para no desbordar el borde inferior del vidrio. */
+  .case-copy p{font-size:clamp(.86rem,1.3vw,1rem);line-height:1.42}
+
+  /* ---- Signal Cloud: los 4 números más fuertes en un objeto 3D distinto (cúmulo de cristales,
+     no una placa más) — antes de Method. Los 4 captions se leen de a uno, docked como el resto. ---- */
+  #signal .stage{min-height:100svh}
+  .cloud-eyebrow{position:sticky;top:6.5rem;margin-left:6vw;display:inline-block;color:var(--brand);z-index:2}
+  .cloud-copy p{font-size:clamp(.85rem,1.3vw,1rem);line-height:1.42;max-width:24ch;margin:0 auto}
+  /* Method: 3 pasos (fusionados de 5) — sigue sin justificar una pantalla completa cada uno,
+     "demasiada distancia" (feedback de Agus) — ritmo de scroll más corto. */
+  #method .stage{min-height:66svh}
 
   /* ---- Work: 6 casos agrupados de a PARES por tema (mitad del scroll que 6 pantallas sueltas,
      más narrativo). El label de tema queda "sticky" mientras se recorre el par. En pantallas
      angostas (mobile) las 2 placas del par se apilan centradas en vez de ir lado a lado — ver
      PAIR_SIDE en JS: lado a lado excede el frustum comprimido en portrait angosto. ---- */
   .pair-theme{position:sticky;top:6.5rem;margin-left:6vw;display:inline-block;color:var(--brand);z-index:2}
-  body.pairs-stack #work .stage{min-height:150svh}
+  #work .stage{min-height:80svh}
+  body.pairs-stack #work .stage{min-height:120svh}
 
   /* ---- Team: DOM puro, sin 3D (el eje ya terminó en Work) — Amir protagonista (columna más ancha) ---- */
   .team{padding:8rem 6vw 6rem;max-width:1100px}
@@ -161,7 +177,7 @@
     <nav>
       <span class="brand">A<span class="accent">+</span> GROWTH</span>
       <span class="links">
-        <a href="#method">Method</a><a href="#work">Work</a><a href="#team">Team</a><a href="#contact">Contact</a>
+        <a href="#signal">Results</a><a href="#method">Method</a><a href="#work">Work</a><a href="#team">Team</a><a href="#contact">Contact</a>
       </span>
     </nav>
 
@@ -173,35 +189,47 @@
     </header>
     <span class="mono scroll-cue">scroll to calibrate ↓</span>
 
+    <section id="signal" class="signal-cloud" aria-label="Results">
+      <!-- Los 4 números más fuertes, en un objeto 3D distinto a las placas (cúmulo de cristales,
+           ver JS) — no una caja plana más. El label queda sticky mientras se recorre la nube. -->
+      <div class="stage" data-cloud="group">
+        <span class="mono cloud-eyebrow">Proof, not promises</span>
+        <div class="stage-copy cloud-copy">
+          <h2 class="sr-only">$1M+ in margin from $2,744 in ad spend.</h2>
+          <p>margin closed from just $2,744 in ad spend — one webinar funnel, still live.</p>
+        </div>
+        <div class="stage-copy cloud-copy">
+          <h2 class="sr-only">10× lower cost per lead.</h2>
+          <p>lower cost per qualified lead — from $50 down to $5.</p>
+        </div>
+        <div class="stage-copy cloud-copy">
+          <h2 class="sr-only">7× ROAS.</h2>
+          <p>ROAS after scaling UGC + AI creative — up from 2×.</p>
+        </div>
+        <div class="stage-copy cloud-copy">
+          <h2 class="sr-only">63,000 leads.</h2>
+          <p>leads generated at $4.5 average cost — a single social funnel.</p>
+        </div>
+      </div>
+    </section>
+
     <section id="method" aria-label="Method">
       <!-- El TÍTULO de cada etapa ahora es geometría 3D (hija de la placa, ver JS) — con volumen
            y textura propia por etapa. El <h2> queda solo para lectores de pantalla (sr-only);
            el párrafo sigue siendo texto DOM legible, anclado bajo la placa. -->
       <div class="stage" data-stage="0">
         <div class="stage-copy">
-          <h2 class="sr-only">Understand the system.</h2>
-          <p>Deep discovery on the business model, audience and funnel assets — we map the system before touching a dollar. No campaign starts without knowing exactly what's being sold, to whom, and why they'd say yes.</p>
+          <h2 class="sr-only">Understand the system, then create.</h2>
+          <p>Deep discovery on the business model, audience and funnel assets, then creative built at volume — ads varied up to 12× more often than standard, always on-brand.</p>
         </div>
       </div>
       <div class="stage" data-stage="1">
         <div class="stage-copy">
-          <h2 class="sr-only">Creative at volume.</h2>
-          <p>Strategy first, then creative volume — ads varied up to 12× more often than standard, always on-brand. Fresh creative beats fatigue before it ever costs you performance.</p>
+          <h2 class="sr-only">Ship the funnel, then measure everything.</h2>
+          <p>Meticulous measurement plan, then fast implementation — speed is part of the strategy. Everything measurable gets measured and improved, so budget only follows what moves revenue.</p>
         </div>
       </div>
       <div class="stage" data-stage="2">
-        <div class="stage-copy">
-          <h2 class="sr-only">Ship the funnel.</h2>
-          <p>Meticulous measurement plan, then fast implementation. Speed is part of the strategy — the sooner it's live, the sooner the data starts working for you.</p>
-        </div>
-      </div>
-      <div class="stage" data-stage="3">
-        <div class="stage-copy">
-          <h2 class="sr-only">Measure everything.</h2>
-          <p>Business results, not vanity metrics. Everything measurable gets measured and improved, so budget only follows what actually moves revenue.</p>
-        </div>
-      </div>
-      <div class="stage" data-stage="4">
         <div class="stage-copy">
           <h2 class="sr-only">The signal compounds.</h2>
           <p>Winners get budget, losers get killed. The signal tells you exactly what to scale next — compounding every week the funnel keeps running.</p>
@@ -354,17 +382,29 @@
   const scene=new THREE.Scene();
   const camera=new THREE.PerspectiveCamera(46,innerWidth/innerHeight,0.1,100); camera.position.set(0,0,9*aspectZScale());
 
-  // ---- Las 5 etapas del Método + la curva del hilo de señal (definidas ANTES de las partículas:
+  // ---- Las 3 etapas del Método (fusionadas de 5) + la curva del hilo de señal (definidas ANTES de las partículas:
   // el campo de partículas ahora SIGUE esta misma curva, en vez de vivir solo en el hero) ----
   // offsets X chicos → placas casi de frente y centradas → el texto encima calza limpio
   // Rampa de marca: gris cálido apagado (caos, sin calibrar) → naranja A+ Growth encendido
   // (señal calibrada) — reemplaza la vieja rampa ámbar→cian (el cian no es de marca).
+  // ---- Signal Cloud: los 4 números más fuertes, ANTES de Method — feedback de Agus: "esos
+  // números no tienen el mismo impacto que las placas", "ponelos en un objeto 3D distinto,
+  // como una nube". No es una caja plana más: un cúmulo de cristales icosaédricos (barato via
+  // InstancedMesh) alrededor de cada número — mismo eje/journey, geometría genuinamente distinta.
+  const CLOUD_Y=-4;
+  const CLOUD_STATS=[
+    {hook:'$1M+', color:0xe8551e, dx:-1.0, dy: 0.75, caption:'margin closed from just $2,744 in ad spend — one webinar funnel, still live.'},
+    {hook:'10X',  color:0xf0611f, dx: 1.0, dy: 0.7,  caption:'lower cost per qualified lead — from $50 down to $5.'},
+    {hook:'7X',   color:0xff6a2b, dx:-0.95,dy:-0.75, caption:'ROAS after scaling UGC + AI creative — up from 2×.'},
+    {hook:'63K',  color:0xff7a3d, dx: 0.95,dy:-0.7,  caption:'leads generated at $4.5 average cost — a single social funnel.'},
+  ].map(s=>Object.assign({},s,{x:s.dx, y:CLOUD_Y+s.dy}));
+
+  // 5→3 pasos (fusionados): feedback de Agus, "demasiadas placas, demasiada distancia" — 2 pasos
+  // cortos que compartían el mismo espíritu (descubrir+crear, ejecutar+medir) pasan a ser uno solo.
   const STAGES=[
-    {y:-8,  x:-0.7, color:0x6b645c, lines:['UNDERSTAND','THE SYSTEM']},        // Discovery
-    {y:-14, x: 0.7, color:0x97887c, lines:['CREATIVE','AT VOLUME']},          // Strategy+creative
-    {y:-20, x:-0.7, color:0xc96a3a, lines:['SHIP THE','FUNNEL']},             // Implementation
-    {y:-26, x: 0.7, color:0xe8551e, lines:['MEASURE','EVERYTHING']},          // Measurement
-    {y:-32, x:-0.5, color:0xff7a3d, lines:['THE SIGNAL','COMPOUNDS']},        // Signal
+    {y:-8,  x:-0.7, color:0x6b645c, lines:['UNDERSTAND','& CREATE']},          // Discovery+Strategy
+    {y:-14, x: 0.7, color:0xe8551e, lines:['SHIP &','MEASURE']},               // Implementation+Measurement
+    {y:-20, x:-0.5, color:0xff7a3d, lines:['THE SIGNAL','COMPOUNDS']},        // Signal
   ];
   // ---- Work: 6 casos reales agrupados de a PARES por tema (mitad del scroll de 6 pantallas
   // sueltas — feedback de Agus tras ver el sitio: "hay que scrollear muchísimo", "condensar").
@@ -405,6 +445,7 @@
     });
   });
   const threadPts=[new THREE.Vector3(0,5.5,-0.4)];
+  threadPts.push(new THREE.Vector3(0, CLOUD_Y, -0.4));   // el hilo también pasa por la nube de señal
   STAGES.forEach(s=>threadPts.push(new THREE.Vector3(s.x*0.5, s.y, -0.4)));
   // Work: el hilo pasa por el CENTRO de cada par (x=0), no por cada caso — en modo lado-a-lado
   // los casos están en x=±1.3 y seguirlos haría zigzaguear el hilo; el eje pasa detrás/entre
@@ -593,7 +634,7 @@
   // ---- Placas de Work: MISMA técnica (frostGlass), geometría APAISADA distinta (4.4×2.4 vs 3.1×3.8) ----
   // PAIR_SIDE: placa más angosta (2 lado a lado deben caber en el frustum). !PAIR_SIDE: placa
   // ancha de antes (1 sola, centrada, mismo tamaño ya verificado sin recorte hasta 320px).
-  const caseGeo=PAIR_SIDE ? new RoundedBoxGeometry(2.6,2.2,0.22,4,0.16) : new RoundedBoxGeometry(4.2,2.4,0.22,4,0.16);
+  const caseGeo=PAIR_SIDE ? new RoundedBoxGeometry(2.6,3.0,0.22,4,0.16) : new RoundedBoxGeometry(4.2,3.0,0.22,4,0.16);
   const casePlates=CASES.map((c)=>{
     const material=frostGlass(sharedMatcap,c.color);
     plateMaterials.push(material);   // mismo array: resizeBgRT/renderBackdrop actualizan TODOS los materiales frosted
@@ -605,23 +646,54 @@
   // lista combinada: raycast de hover, toggle de visibilidad en renderBackdrop, glow por proximidad
   const allPlates=[...plates,...casePlates];
 
+  // ---- Signal Cloud: geometría GENUINAMENTE distinta a las placas (pedido explícito de Agus:
+  // "no la misma caja, algo diferente, una nube") — un cúmulo esférico de cristales icosaédricos
+  // por número, vía InstancedMesh (1 sola llamada de dibujo por cúmulo, ~16 sombras cada uno:
+  // barato). No usa frostGlass/backdrop — son sólidos pequeños, no vidrio plano, no lo necesitan.
+  function makeShardCluster(color,count){
+    const geo=new THREE.IcosahedronGeometry(0.075,0);
+    const mat=new THREE.MeshMatcapMaterial({matcap:sharedMatcap,color:new THREE.Color(color),transparent:true,opacity:0.82});
+    const mesh=new THREE.InstancedMesh(geo,mat,count);
+    const dummy=new THREE.Object3D();
+    for(let i=0;i<count;i++){
+      const r=0.4+Math.random()*0.55;
+      const theta=Math.random()*Math.PI*2, phi=Math.acos(2*Math.random()-1);
+      dummy.position.set(r*Math.sin(phi)*Math.cos(theta), r*Math.sin(phi)*Math.sin(theta)*0.8, r*Math.cos(phi)*0.6);
+      dummy.rotation.set(Math.random()*Math.PI,Math.random()*Math.PI,Math.random()*Math.PI);
+      dummy.scale.setScalar(0.5+Math.random()*0.9);
+      dummy.updateMatrix();
+      mesh.setMatrixAt(i,dummy.matrix);
+    }
+    mesh.instanceMatrix.needsUpdate=true;
+    return mesh;
+  }
+  const cloudGroups=CLOUD_STATS.map(s=>{
+    const group=new THREE.Group();
+    group.add(makeShardCluster(s.color, TIER.quality==='low'?9:16));
+    group.position.set(s.x, s.y, 0);
+    scene.add(group);
+    return group;
+  });
+
   // ---- Título VOLUMÉTRICO 3D, hijo de la placa: hereda posición/rotación automáticamente
   // (arregla de raíz que "el texto no acompaña a la placa" — al ser hijo, es LA MISMA pieza).
-  // Textura propia por etapa: cada título tiene su matcap generado desde el color de su etapa.
-  function makeTitleMatcap(hex){
+  // BUG DE CONTRASTE encontrado por Agus (con captura): el matcap del texto se generaba a partir
+  // del MISMO color de la placa (solo más claro) → título y vidrio quedaban del mismo tono, se
+  // fundían, ilegible. Fix: matcap de texto FIJO cian-blanco (siempre contrasta contra el vidrio
+  // cálido, sea cual sea su color de etapa) — el color de etapa sigue vivo vía uNeon (rim al hover).
+  // De paso reintroduce el cian como acento — pedido explícito, "aquí y allá, no en todos lados".
+  function makeTextMatcap(){
     const c=document.createElement('canvas'); c.width=c.height=128; const x=c.getContext('2d');
-    const col=new THREE.Color(hex); const hi=col.clone().lerp(new THREE.Color(0xffffff),0.75);
-    const lo=col.clone().multiplyScalar(0.22);
     const g=x.createRadialGradient(48,42,4,64,64,80);
-    g.addColorStop(0,'#'+hi.getHexString()); g.addColorStop(0.45,'#'+col.getHexString());
-    g.addColorStop(0.8,'#'+lo.getHexString()); g.addColorStop(1,'#05070a');
+    g.addColorStop(0,'#f2feff'); g.addColorStop(0.45,'#7fe8e0');
+    g.addColorStop(0.8,'#1c4a48'); g.addColorStop(1,'#05070a');
     x.fillStyle=g; x.fillRect(0,0,128,128);
     const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; return t;
   }
   new FontLoader().load('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/fonts/helvetiker_bold.typeface.json', (font)=>{
     STAGES.forEach((s,i)=>{
       const plate=plates[i];
-      const titleMat=frostGlass(makeTitleMatcap(s.color), s.color);   // misma técnica de vidrio, textura propia
+      const titleMat=frostGlass(makeTextMatcap(), s.color);   // misma técnica de vidrio, matcap fijo (contraste)
       const lineHeight=0.62, size=0.42, totalH=(s.lines.length-1)*lineHeight;
       s.lines.forEach((line,li)=>{
         // OJO (bug real): la propiedad de profundidad de TextGeometry se llama "height", NO
@@ -643,7 +715,7 @@
     // protagonista de la placa apaisada. Misma técnica (hijo 3D + matcap propio + clamp de ancho).
     CASES.forEach((c,i)=>{
       const plate=casePlates[i];
-      const hookMat=frostGlass(makeTitleMatcap(c.color), c.color);
+      const hookMat=frostGlass(makeTextMatcap(), c.color);
       const geo=new TextGeometry(c.hook,{font,size:0.62,height:0.16,curveSegments:6,
         bevelEnabled:true,bevelThickness:0.024,bevelSize:0.016,bevelSegments:3});
       geo.computeBoundingBox();
@@ -655,6 +727,21 @@
       if(w>maxW) mesh.scale.setScalar(maxW/w);
       mesh.position.set(0,0.15,0.15);      // centrado, apenas saliente de la cara + espacio para el nombre debajo
       plate.add(mesh);
+    });
+    // ---- Signal Cloud: el número flota EN EL CENTRO de su cúmulo de cristales (no dentro de
+    // un vidrio) — mismo matcap de contraste, tamaño moderado (son 4 a la vez, no 1 protagonista).
+    CLOUD_STATS.forEach((s,i)=>{
+      const group=cloudGroups[i];
+      const hookMat=frostGlass(makeTextMatcap(), s.color);
+      const geo=new TextGeometry(s.hook,{font,size:0.46,height:0.13,curveSegments:6,
+        bevelEnabled:true,bevelThickness:0.02,bevelSize:0.014,bevelSegments:3});
+      geo.computeBoundingBox();
+      const w=geo.boundingBox.max.x-geo.boundingBox.min.x, h=geo.boundingBox.max.y-geo.boundingBox.min.y;
+      geo.translate(-w/2,-h/2,0);
+      const mesh=new THREE.Mesh(geo,hookMat);
+      const maxW=1.5;
+      if(w>maxW) mesh.scale.setScalar(maxW/w);
+      group.add(mesh);
     });
   }, undefined, (err)=>console.warn('[amir] no se pudo cargar la fuente para los títulos 3D:',err));
 
@@ -709,12 +796,12 @@
     camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix(); resizeBgRT();}
   fit(); addEventListener('resize',fit);
 
-  // ---- Progreso de scroll → uOrder + cámara viajando por el eje (hero → Method → Work) ----
+  // ---- Progreso de scroll → uOrder + cámara viajando por el eje (hero → Cloud → Method → Work) ----
   // OJO: `progress` ya NO es el % del documento ENTERO (rompía al insertar secciones nuevas: una
   // sección sin placas corría cámara igual, por un tramo de scroll que no le correspondía). Ahora
-  // se deriva de la posición REAL del tramo Method+Work (un solo viaje continuo, el "eje" no se
-  // corta): 0 mientras se scrollea Hero+Results (la cámara espera quieta ahí), 1 al llegar al
-  // final de Work — así cualquier sección que se agregue ANTES de Method no descalibra nada.
+  // se deriva de la posición REAL del tramo Cloud+Method+Work (un solo viaje continuo, el "eje" no
+  // se corta): 0 al terminar el Hero (la cámara arranca a moverse ahí), 1 al llegar al final de
+  // Work — así cualquier sección que se agregue DESPUÉS del hero se integra al mismo viaje.
   const camLook=new THREE.Vector3(0,0,0);
   const lastPlateY=CASES.at(-1).y;   // el eje ahora termina en el último caso de Work, no en Method
   const lerp=(a,b,k)=>a+(b-a)*k;
@@ -724,17 +811,22 @@
   const scrollCueEl=document.querySelector('.scroll-cue');
   let progress=0, camTargetY=0.8, camTargetZ=9, camLookTargetY=0;
   function updateFromScroll(){
-    // uOrder: el caos se calibra durante Hero+Results (para cuando aparecen los números de
-    // Resultados, la señal ya está "ordenada" — refuerza el mensaje, no es solo decorativo).
-    const preMethodRange=Math.max(1, methodEl.offsetTop-innerHeight*0.3);
+    // uOrder: el caos se calibra durante el Hero (para cuando aparece la nube de señal, la
+    // demanda ya está "ordenada" — refuerza el mensaje, no es solo decorativo).
+    const preMethodRange=Math.max(1, heroEl.offsetHeight-innerHeight*0.3);
     uniforms.uOrder.value=Math.min(scrollY/preMethodRange,1);
-    // progress: dentro del rango scrolleable combinado de #method+#work (un solo viaje de cámara).
-    const journeyTop=methodEl.offsetTop;
+    // progress: dentro del rango scrolleable combinado de #signal+#method+#work (un solo viaje).
+    const journeyTop=heroEl.offsetHeight;
     const journeyBottom=workEl.offsetTop+workEl.offsetHeight;
     const journeyScrollable=Math.max(1, journeyBottom-innerHeight-journeyTop);
     progress=Math.max(0,Math.min(1,(scrollY-journeyTop)/journeyScrollable));
     camTargetY=lerp(0.8, lastPlateY-3, progress);
-    camTargetZ=lerp(9, 5.2, progress)*aspectZScale();
+    // Z NO puede cerrar linealmente a lo largo de TODO el viaje (Cloud+Method+Work): con la nube
+    // temprano en un journey largo, progress todavía es chico ahí y la cámara quedaba lejísimos
+    // (Z≈20 en mobile, verificado — la nube se veía perdida/chica, todo lo contrario del pedido
+    // de "más impacto"). Satura rápido (como uOrder) — de cerca desde el principio del recorrido.
+    const zProgress=Math.min(1, progress*14);
+    camTargetZ=lerp(9, 5.2, zProgress)*aspectZScale();
     camLookTargetY=lerp(0, lastPlateY, progress);
     if(scrollCueEl) scrollCueEl.style.opacity=scrollY>heroEl.offsetHeight*0.35?0:1;
   }
@@ -773,17 +865,27 @@
     _projV.set(x,y,z).project(camera);
     return { x:(_projV.x*0.5+0.5)*innerWidth, y:(1-(_projV.y*0.5+0.5))*innerHeight };
   }
+  // ancho disponible REAL en pantalla del interior de la placa (con un inset para que el texto
+  // no toque el borde de vidrio) — el caption se dimensiona a esto cada frame, así queda
+  // literalmente CONTENIDO en el panel (antes se salía por fuera con un ancho fijo en ch).
+  function projectedWidth(x,y,halfWidth){
+    const l=projectPoint(x-halfWidth,y,0).x, r=projectPoint(x+halfWidth,y,0).x;
+    return Math.max(80, r-l);
+  }
   // proximidad de cámara a cada etapa (0..1) — se reusa para el glow neón en touch, donde no
   // existe mousemove/hover: la placa más cercana al centro de la pantalla se ilumina sola.
   const stageProximity=new Array(STAGES.length).fill(0);
+  const STAGE_HALFW=3.1/2*0.8;   // 80% del medio-ancho de la placa: margen interno de aire
   function dockStageCopies(){
     for(let i=0;i<STAGES.length;i++){
       const s=STAGES[i], el=stageCopyEls[i]; if(!el) continue;
-      // el TÍTULO ya vive dentro del vidrio (hijo 3D de la placa) — el párrafo (caption) se
-      // ancla JUSTO DEBAJO del borde inferior de la placa, sin taparlo.
-      const c=projectPoint(s.x, s.y-2.3, 0);
-      const w=el.offsetWidth, h=el.offsetHeight;
-      const tx=c.x-w/2, ty=c.y;
+      // el TÍTULO 3D vive en la mitad superior del vidrio; el caption se ancla DEBAJO del título
+      // pero DENTRO del borde inferior de la placa — antes quedaba afuera, "sobre" el vidrio, no
+      // parte de él (feedback de Agus con captura).
+      const availW=projectedWidth(s.x,s.y,STAGE_HALFW);
+      const c=projectPoint(s.x, s.y-1.1, 0);
+      el.style.width=Math.round(availW)+'px';
+      const tx=c.x-availW/2, ty=c.y;
       el.style.transform=`translate3d(${Math.round(tx)}px,${Math.round(ty)}px,0)`;
       const dist=Math.abs(camLook.y-s.y);
       const op=Math.max(0,Math.min(1,1-dist/5));
@@ -791,20 +893,37 @@
       stageProximity[i]=op;
     }
   }
-  // Work: misma técnica de docking, offset distinto (placa apaisada 2.4 de alto, no 3.8 — el
-  // caption se ancla más cerca del borde inferior real de la placa, no queda "flotando" lejos).
+  // Work: misma técnica — caption dentro del borde inferior de cada placa (angosta o ancha
+  // según PAIR_SIDE), ancho dinámico según el ancho real de ESA placa.
   const caseCopyEls=[...document.querySelectorAll('.case-copy')];
   const caseProximity=new Array(CASES.length).fill(0);
+  const CASE_HALFW=(PAIR_SIDE?2.6:4.2)/2*0.82;
+  const CASE_ANCHOR_Y=-3.0/2*0.2;   // ~20% del medio-alto hacia abajo del centro — deja lugar real debajo con margen
   function dockCaseCopies(){
     for(let i=0;i<CASES.length;i++){
       const c=CASES[i], el=caseCopyEls[i]; if(!el) continue;
-      const p=projectPoint(c.x, c.y-1.55, 0);
-      const w=el.offsetWidth;
-      el.style.transform=`translate3d(${Math.round(p.x-w/2)}px,${Math.round(p.y)}px,0)`;
+      const availW=projectedWidth(c.x,c.y,CASE_HALFW);
+      const p=projectPoint(c.x, c.y+CASE_ANCHOR_Y, 0);
+      el.style.width=Math.round(availW)+'px';
+      el.style.transform=`translate3d(${Math.round(p.x-availW/2)}px,${Math.round(p.y)}px,0)`;
       const dist=Math.abs(camLook.y-c.y);
       const op=Math.max(0,Math.min(1,1-dist/5));
       el.style.opacity=op; el.classList.toggle('active',op>0.55);
       caseProximity[i]=op;
+    }
+  }
+  // Signal Cloud: no hay "placa" que contener — ancho fijo razonable (ver CSS), anclado debajo
+  // de CADA número (no de un centro compartido) para que cada caption siga a su propio cristal.
+  const cloudCopyEls=[...document.querySelectorAll('.cloud-copy')];
+  function dockCloudCopies(){
+    for(let i=0;i<CLOUD_STATS.length;i++){
+      const s=CLOUD_STATS[i], el=cloudCopyEls[i]; if(!el) continue;
+      const p=projectPoint(s.x, s.y-0.55, 0);
+      const w=el.offsetWidth;
+      el.style.transform=`translate3d(${Math.round(p.x-w/2)}px,${Math.round(p.y)}px,0)`;
+      const dist=Math.abs(camLook.y-s.y);
+      const op=Math.max(0,Math.min(1,1-dist/5));
+      el.style.opacity=op; el.classList.toggle('active',op>0.55);
     }
   }
 
@@ -813,18 +932,20 @@
   const SHOT=params.has('shot');
   const shotStage=params.get('stage');            // ?shot&stage=2 → verificar una etapa de Method
   const shotCase=params.get('case');              // ?shot&case=2 → verificar un caso de Work
+  const shotCloud=params.get('cloud');            // ?shot&cloud=2 → verificar un número de la nube
   if(SHOT){
-    if(shotStage!=null || shotCase!=null){
-      const s=shotStage!=null?STAGES[+shotStage]:CASES[+shotCase];
+    if(shotStage!=null || shotCase!=null || shotCloud!=null){
+      const s=shotStage!=null?STAGES[+shotStage]:shotCase!=null?CASES[+shotCase]:CLOUD_STATS[+shotCloud];
       // Replica la cámara REAL del scroll (no una vista de acercamiento artificial) — así el
-      // shot verifica lo mismo que el usuario ve al scrollear hasta esa etapa/caso.
+      // shot verifica lo mismo que el usuario ve al scrollear hasta esa etapa/caso/número.
       const pAt=s.y/lastPlateY;
-      camera.position.set(0, lerp(0.8,lastPlateY-3,pAt), lerp(9,5.2,pAt)*aspectZScale());
+      const zAt=Math.min(1,pAt*14);   // misma saturación rápida de Z que updateFromScroll()
+      camera.position.set(0, lerp(0.8,lastPlateY-3,pAt), lerp(9,5.2,zAt)*aspectZScale());
       camLook.set(0, s.y, 0);
       uniforms.uOrder.value=1;
       if(params.has('hover')){   // ?shot&stage=N&hover / ?shot&case=N&hover → verificar neón
         if(shotStage!=null) plates[+shotStage].material.userData.uHover.value=1;
-        else casePlates[+shotCase].material.userData.uHover.value=1;
+        else if(shotCase!=null) casePlates[+shotCase].material.userData.uHover.value=1;
       }
     } else { uniforms.uOrder.value=0.32; camera.position.set(0,0.8,9*aspectZScale()); camLook.set(0,0,0); }
   }
@@ -837,7 +958,7 @@
     camera.position.x+=((progress<0.14?pointerX*1.4:0)-camera.position.x)*0.06;
     camLook.y+=(camLookTargetY-camLook.y)*0.06;
     camera.lookAt(camLook);
-    dockStageCopies(); dockCaseCopies();   // texto anclado al borde proyectado de su placa — una sola pieza
+    dockCloudCopies(); dockStageCopies(); dockCaseCopies();   // texto anclado al borde proyectado de su placa — una sola pieza
     // hover neón: en mouse, la placa apuntada se enciende a full. En touch no hay mousemove
     // (nunca se dispara), así que la reemplazamos por un glow suave y automático basado en
     // proximidad de scroll — la placa que está "al frente" en ese momento se ilumina sola.
@@ -854,19 +975,19 @@
     requestAnimationFrame(render);
   }
   updateFromScroll();
-  camera.lookAt(camLook); dockStageCopies(); dockCaseCopies();   // evita el flash de posición (0,0) en el primer frame
+  camera.lookAt(camLook); dockCloudCopies(); dockStageCopies(); dockCaseCopies();   // evita el flash de posición (0,0) en el primer frame
   if(SHOT){
     // Captura: render SÍNCRONO (sin rAF, que se throttlea a ~1fps en tabs de background).
     // Con la cámara/uOrder ya fijados no hace falta converger nada — 3 frames alcanzan.
-    const shotFrames=(shotStage!=null||shotCase!=null)?8:60;   // vista puntual: barata (frostGlass, sin transmission real)
+    const shotFrames=(shotStage!=null||shotCase!=null||shotCloud!=null)?8:60;   // vista puntual: barata (frostGlass, sin transmission real)
     for(let i=0;i<shotFrames;i++){
       uniforms.uTime.value=i*0.03; uniforms.uForce.value*=0.94;
       threadUniforms.uTime.value=i*0.03;
-      camera.lookAt(camLook); dockStageCopies(); dockCaseCopies(); renderBackdrop(); composer.render();
+      camera.lookAt(camLook); dockCloudCopies(); dockStageCopies(); dockCaseCopies(); renderBackdrop(); composer.render();
     }
     console.log('[amir] shot listo (sync)');
   } else render();
-  if(params.has('debug')) window.__amirDebug={camera,plates,casePlates,STAGES,CASES,CASE_PAIRS,PAIR_SIDE,projectPoint,aspectZScale,TIER,TOUCH,
+  if(params.has('debug')) window.__amirDebug={camera,plates,casePlates,cloudGroups,STAGES,CASES,CASE_PAIRS,CLOUD_STATS,PAIR_SIDE,projectPoint,aspectZScale,TIER,TOUCH,
     updateFromScroll,methodEl,workEl,heroEl,camLook,get progress(){return progress},get camTargetY(){return camTargetY},
     get camTargetZ(){return camTargetZ},get uOrder(){return uniforms.uOrder.value}}; // solo verificación
   console.log('[amir] hero + método + work listo ·',N,'partículas ·',STAGES.length,'placas method ·',CASES.length,'placas work');
