@@ -384,9 +384,15 @@
     // física del dispositivo — en headless/algunos webviews da 0, y en desktop con ventana
     // angosta da el ancho del monitor entero, no el de la ventana: señal equivocada para el costo real).
     const small=Math.min(innerWidth,innerHeight)<760;
-    if(small) return{dpr:Math.min(devicePixelRatio,1),count:5000,quality:'low',blurTaps:1,bloom:0.3};
-    if(TOUCH) return{dpr:Math.min(devicePixelRatio,1.25),count:8000,quality:'mid',blurTaps:3,bloom:0.38};
-    return{dpr:Math.min(devicePixelRatio,1.5),count:9000,quality:'high',blurTaps:5,bloom:0.45};})();
+    // BUG real señalado por Agus con captura (zoom cercano): dpr:1 en tier bajo renderiza a 1/3
+    // de la resolución física real de un teléfono moderno (devicePixelRatio 2.5-3) — el buffer
+    // se ve nítido a SU propio tamaño, pero el navegador lo estira 2.5-3x para llenar la pantalla,
+    // y ESO es lo que se ve "extremadamente pixelado" (bloques visibles, no solo bordes dentados).
+    // Subido en los 3 tiers — sigue MUY por debajo del dpr real del dispositivo (nunca full nativo,
+    // eso sí tumbaría el fps que ya se cuidó este mismo día), pero corta la peor parte del escalado.
+    if(small) return{dpr:Math.min(devicePixelRatio,1.5),count:5000,quality:'low',blurTaps:1,bloom:0.3};
+    if(TOUCH) return{dpr:Math.min(devicePixelRatio,1.75),count:8000,quality:'mid',blurTaps:3,bloom:0.38};
+    return{dpr:Math.min(devicePixelRatio,2),count:9000,quality:'high',blurTaps:5,bloom:0.45};})();
   // Tier bajo (mobile) corre menos fps bajo carga → menos frames disponibles para que el lerp de
   // cámara alcance su target, lo que se percibe como "el scroll responde lento/con gap". Compensar
   // con un lerp más agresivo por frame (12% vs 6%) cierra la distancia en menos frames.
@@ -612,7 +618,12 @@
         float twinklePhase=uTime*0.5+aRnd*62.83+aAngle*1.7;
         vTwinkle=pow(max(0.0,sin(twinklePhase)),16.0);
         vec4 mv=modelViewMatrix*vec4(pos,1.0);
-        gl_PointSize=(aRnd*1.0+0.35)*(52.0/-mv.z)*(0.6+order*0.6)*(1.0+aBigZ*2.2)*(1.0+vTwinkle*0.9);
+        // BUG real señalado por Agus con captura (pixelado extremo tras subir el brillo): un pico
+        // MUY chico y MUY brillante, agrandado 1.9x, es lo peor posible para el bloom de mip-chain
+        // (UnrealBloomPass) a resolución de render reducida — se ve como un bloque duro, no un
+        // brillo suave. Boost de tamaño más moderado (antes 0.9) para que el destello siga
+        // notándose sin crear ese artefacto.
+        gl_PointSize=(aRnd*1.0+0.35)*(52.0/-mv.z)*(0.6+order*0.6)*(1.0+aBigZ*2.2)*(1.0+vTwinkle*0.4);
         gl_Position=projectionMatrix*mv;
       }`,
     fragmentShader:`
@@ -628,8 +639,8 @@
         // los que el bloom engancha para dar el halo neón — en 1.0 exacto no había margen de sobra.
         vec3 signalCol=vec3(1.35,0.46,0.16);  // señal calibrada: naranja de marca A+ Growth, HDR
         vec3 col=mix(chaosCol,signalCol,vOrder);
-        col+=vTwinkle*vec3(1.6,1.3,0.9);       // destello: pico HDR bien por encima de 1.0, el bloom lo agarra fuerte
-        gl_FragColor=vec4(col, min(1.0,a+vTwinkle*0.4));  // normal blending: el color se mantiene, no lava
+        col+=vTwinkle*vec3(1.1,0.9,0.6);       // destello: pico HDR por encima de 1.0 (el bloom lo agarra), moderado
+        gl_FragColor=vec4(col, min(1.0,a+vTwinkle*0.3));  // normal blending: el color se mantiene, no lava
       }`});
   const points=new THREE.Points(geo,mat); scene.add(points);
 
@@ -912,7 +923,15 @@
       // quedaba null para siempre → "behind" muestreaba negro → outgoingLight=mix(negro,matcap,0.28)
       // aplastaba el matcap brillante a un 28% — ESA es la razón real del texto apagado/sin
       // contraste, más que la elección de color. Fix: empujarlo al array (mismo que las placas).
-      const titleMat=frostGlass(makeTextMatcap(), s.color, {matcapWeight:0.78, neonStrength:0.3});
+      // REGLA DURA de Agus (mayúsculas): el texto de las placas debe verse legible SIEMPRE, sin
+      // excepción — nunca puede depender de cuánto brille lo que hay detrás del vidrio en ese
+      // momento. matcapWeight (antes 0.78) todavía dejaba un 22% de "behind" filtrarse en el
+      // color final — ese 22% es EXACTAMENTE lo que se volvió impredecible la vez que subimos el
+      // brillo de las partículas (mismo bug, otra vuelta). Subido a 0.97: el shading de vidrio +
+      // el rim cálido (fresnel, no depende del fondo) siguen exactamente igual — solo se cierra el
+      // único canal que dependía de algo variable, dejando el texto inmune para siempre a futuros
+      // ajustes de brillo/bloom/hover.
+      const titleMat=frostGlass(makeTextMatcap(), s.color, {matcapWeight:0.97, neonStrength:0.3});
       plateMaterials.push(titleMat);
       // BUG real señalado por Agus: "cuando apunto a la placa, no se lee bien — necesita
       // contraste, no solo brillo". Causa: frostGlass deja opacity:0.6 de base (pensado para
@@ -955,7 +974,7 @@
     // los 3 geometría 3D hija de la MISMA placa apaisada — mismo criterio que Method arriba).
     CASES.forEach((c,i)=>{
       const plate=casePlates[i];
-      const hookMat=frostGlass(makeTextMatcap(), c.color, {matcapWeight:0.78, neonStrength:0.3});   // mismo bug/fix que titleMat arriba
+      const hookMat=frostGlass(makeTextMatcap(), c.color, {matcapWeight:0.97, neonStrength:0.3});   // mismo bug/fix que titleMat arriba
       plateMaterials.push(hookMat);
       hookMat.opacity=0.96;   // mismo fix de contraste en hover que titleMat (ver arriba)
       const geo=new TextGeometry(c.hook,{font,size:0.46,height:0.13,curveSegments:14,
@@ -982,7 +1001,7 @@
       // nunca se agregaba a plateMaterials → tBackdrop quedaba null para siempre → texto negro/
       // invisible (nunca se vio en ningún screenshot). Fix: empujarlo al mismo array que actualiza
       // renderBackdrop() cada frame, igual que las placas de Method/Work.
-      const hookMat=frostGlass(makeTextMatcap(), s.color, {matcapWeight:0.78, neonStrength:0.3});
+      const hookMat=frostGlass(makeTextMatcap(), s.color, {matcapWeight:0.97, neonStrength:0.3});
       plateMaterials.push(hookMat);
       hookMat.opacity=0.96;   // mismo fix de contraste que titleMat (consistencia, aunque el dial no tiene hover)
       const geo=new TextGeometry(s.hook,{font,size:0.38,height:0.12,curveSegments:14,
@@ -1058,10 +1077,11 @@
   // EffectComposer (renderiza a un WebGLRenderTarget propio, sin MSAA, y el antialias del
   // contexto WebGL solo aplica a lo que se dibuja DIRECTO al canvas). Fix: pase de post-proceso
   // SMAA (más barato que MSAA real, no necesita reconfigurar el render target del composer).
-  // Se salta en tier bajo (mobile chico) para no gastar el presupuesto de frame ahí.
-  if(TIER.quality!=='low'){
-    composer.addPass(new SMAAPass(innerWidth*renderer.getPixelRatio(), innerHeight*renderer.getPixelRatio()));
-  }
+  // BUG real señalado por Agus con captura (2da vuelta, mucho peor): saltear SMAA en tier bajo
+  // dejaba el caso más común (mobile) sin NINGÚN anti-aliasing — bordes de dígitos y ticks del
+  // dial se ven en escalera. SMAA es un solo pase full-screen, barato incluso en mobile (no es
+  // MSAA real ni el blur de 5 muestras del frostGlass) — se corre siempre, sin gate de tier.
+  composer.addPass(new SMAAPass(innerWidth*renderer.getPixelRatio(), innerHeight*renderer.getPixelRatio()));
   composer.addPass(new OutputPass());
 
   // Encuadre de cámara pensado para aspecto de escritorio (ancho). En un celular vertical
