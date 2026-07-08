@@ -884,7 +884,13 @@
   const methodEl=document.getElementById('method');
   const workEl=document.getElementById('work');
   const scrollCueEl=document.querySelector('.scroll-cue');
-  let progress=0, camTargetY=0.8, camTargetZ=9, camLookTargetY=0, beyondJourney=false;
+  // BUG real (encontrado en vivo, 2 vueltas de fix): un booleano actualizado SOLO por el listener
+  // de scroll puede quedar desincronizado del scroll REAL si algo dispara un render() de más
+  // (rAF, resize) sin que haya habido un evento 'scroll' de por medio — el booleano decía
+  // "false" (el último estado bueno) mientras la placa ya estaba lejos. Fix definitivo: función
+  // que lee scrollY EN VIVO cada vez que se llama, nunca un booleano cacheado.
+  function isBeyondJourney(){ return scrollY>(workEl.offsetTop+workEl.offsetHeight); }
+  let progress=0, camTargetY=0.8, camTargetZ=9, camLookTargetY=0;
   function updateFromScroll(){
     // uOrder: el caos se calibra durante el Hero (para cuando aparece la nube de señal, la
     // demanda ya está "ordenada" — refuerza el mensaje, no es solo decorativo).
@@ -910,8 +916,7 @@
     // caption viejo puede quedar "pegado" y visible sobre Team/Contact (DOM puro, sin cámara 3D).
     // Fix: gate DURO por posición de scroll REAL (no por camLook.y, que puede estar atrasado) —
     // más allá de Work, ningún caption puede mostrarse, sin importar en qué esté el lerp.
-    beyondJourney=scrollY>journeyBottom;
-    if(beyondJourney){
+    if(isBeyondJourney()){
       cloudCopyEls.forEach(el=>{ el.style.opacity=0; el.classList.remove('active'); });
       stageCopyEls.forEach(el=>{ el.style.opacity=0; el.classList.remove('active'); });
       caseCopyEls.forEach(el=>{ el.style.opacity=0; el.classList.remove('active'); });
@@ -973,7 +978,7 @@
     // BUG real (2da vuelta): el forzado a 0 en updateFromScroll() no alcanzaba solo — si el rAF
     // corre DESPUÉS (aunque sea 1 frame suelto) con camLook.y todavía sin converger del todo,
     // este mismo dock recalculaba un valor >0 y lo pisaba. El guard tiene que estar ACÁ también.
-    if(beyondJourney){ stageCopyEls.forEach(el=>{ if(el){el.style.opacity=0; el.classList.remove('active');} }); return; }
+    if(isBeyondJourney()){ stageCopyEls.forEach(el=>{ if(el){el.style.opacity=0; el.classList.remove('active');} }); return; }
     const gate=sectionGate(camLook.y, CLOUD_BOTTOM_Y, METHOD_BOTTOM_Y, GATE_FEATHER);
     for(let i=0;i<STAGES.length;i++){
       const s=STAGES[i], el=stageCopyEls[i]; if(!el) continue;
@@ -998,7 +1003,7 @@
   const CASE_HALFW=(PAIR_SIDE?2.6:4.2)/2*0.82;
   const CASE_ANCHOR_Y=-3.0/2*0.2;   // ~20% del medio-alto hacia abajo del centro — deja lugar real debajo con margen
   function dockCaseCopies(){
-    if(beyondJourney){ caseCopyEls.forEach(el=>{ if(el){el.style.opacity=0; el.classList.remove('active');} }); return; }
+    if(isBeyondJourney()){ caseCopyEls.forEach(el=>{ if(el){el.style.opacity=0; el.classList.remove('active');} }); return; }
     const gate=sectionGate(camLook.y, METHOD_BOTTOM_Y, CASES.at(-1).y-100, GATE_FEATHER);
     for(let i=0;i<CASES.length;i++){
       const c=CASES[i], el=caseCopyEls[i]; if(!el) continue;
@@ -1016,7 +1021,7 @@
   // de CADA número (no de un centro compartido) para que cada caption siga a su propio cristal.
   const cloudCopyEls=[...document.querySelectorAll('.cloud-copy')];
   function dockCloudCopies(){
-    if(beyondJourney){ cloudCopyEls.forEach(el=>{ if(el){el.style.opacity=0; el.classList.remove('active');} }); return; }
+    if(isBeyondJourney()){ cloudCopyEls.forEach(el=>{ if(el){el.style.opacity=0; el.classList.remove('active');} }); return; }
     const gate=sectionGate(camLook.y, CLOUD_TOP_Y, CLOUD_BOTTOM_Y, GATE_FEATHER);
     for(let i=0;i<CLOUD_STATS.length;i++){
       const s=CLOUD_STATS[i], el=cloudCopyEls[i]; if(!el) continue;
