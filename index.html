@@ -429,14 +429,22 @@
   // queda fuera del encuadre inicial de cámara (y=0.8 mirando a y=0), solo aparece con el scroll.
   // F5 (plan de rediseño, opción A elegida por Agus): posiciones re-armadas en constelación
   // ASIMÉTRICA (no grid 2×2 — el taste audit marcó el layout anterior como demasiado prolijo/
-  // especular) — distancia mínima entre pares ~2.3 unidades, calculada a mano para que ningún
-  // dial (radio ~1.0 con ticks) se solape con otro.
+  // especular).
+  // BUG real visto en captura de Chrome (feedback de Agus, 2da ronda): el cálculo de distancia
+  // mínima anterior solo consideraba el radio del ANILLO (~1.04 con ticks), no el ALCANCE del
+  // CAPTION dockeado debajo de cada dial (ancla a `y-1.15` + alto real del panel, ~1.75 en
+  // total) — el caption de "10X" terminaba tocando el anillo de "63K" justo debajo. Fix: 2
+  // columnas (izq/der bien separadas en X, >2.1 — sin riesgo de colisión cruzada sin importar
+  // Y) con gap vertical DENTRO de cada columna ≥2.79 (1.75 alcance-de-caption-arriba +
+  // 1.04 radio-de-anillo-abajo) — se usa 3.0-3.2 con margen. También se revalida el gap contra
+  // la placa de Method (STAGES[0].y=-15): el dial más bajo debe quedar en y>-11.35 para que su
+  // caption (alcance hasta y-1.75) no toque el borde superior de esa placa (y+1.9).
   const CLOUD_Y=-9;
   const CLOUD_STATS=[
-    {hook:'$1M+', color:0xe8551e, dx:-1.8, dy: 1.3,  caption:'margin closed from just $2,744 in ad spend — one webinar funnel, still live.'},
-    {hook:'10X',  color:0xf0611f, dx: 1.6, dy: 0.9,  caption:'lower cost per qualified lead — from $50 down to $5.'},
-    {hook:'7X',   color:0xff6a2b, dx:-1.3, dy:-1.2,  caption:'ROAS after scaling UGC + AI creative — up from 2×.'},
-    {hook:'63K',  color:0xff7a3d, dx: 2.1, dy:-1.3,  caption:'leads generated at $4.5 average cost — a single social funnel.'},
+    {hook:'$1M+', color:0xe8551e, dx:-1.8, dy: 1.2,  caption:'margin closed from just $2,744 in ad spend — one webinar funnel, still live.'},
+    {hook:'10X',  color:0xf0611f, dx: 1.7, dy: 1.0,  caption:'lower cost per qualified lead — from $50 down to $5.'},
+    {hook:'7X',   color:0xff6a2b, dx:-1.4, dy:-2.0,  caption:'ROAS after scaling UGC + AI creative — up from 2×.'},
+    {hook:'63K',  color:0xff7a3d, dx: 2.0, dy:-2.0,  caption:'leads generated at $4.5 average cost — a single social funnel.'},
   ].map(s=>Object.assign({},s,{x:s.dx, y:CLOUD_Y+s.dy}));
 
   // 5→3 pasos (fusionados): feedback de Agus, "demasiadas placas, demasiada distancia" — 2 pasos
@@ -972,6 +980,7 @@
   const heroEl=document.querySelector('.hero');
   const methodEl=document.getElementById('method');
   const workEl=document.getElementById('work');
+  const teamEl=document.getElementById('team');
   const scrollCueEl=document.querySelector('.scroll-cue');
   // BUG real (encontrado en vivo, 2 vueltas de fix): un booleano actualizado SOLO por el listener
   // de scroll puede quedar desincronizado del scroll REAL si algo dispara un render() de más
@@ -979,15 +988,20 @@
   // "false" (el último estado bueno) mientras la placa ya estaba lejos. Fix definitivo: función
   // que lee scrollY EN VIVO cada vez que se llama, nunca un booleano cacheado.
   function isBeyondJourney(){ return scrollY>(workEl.offsetTop+workEl.offsetHeight); }
-  // BUG real señalado por Agus con captura: los captions de Work quedaban a opacidad PLENA justo
-  // hasta el corte duro de isBeyondJourney — en el viewport de transición, Team ya se veía (viene
-  // pegado justo después en el flujo normal del documento) mientras el último caso todavía se leía
-  // a full sobre las fotos. Fix: un fade de cola que empieza ANTES del final real, para que la
-  // opacidad ya haya llegado a 0 con margen cuando el contenido de Team entra en el viewport.
-  const TAIL_FADE_PX=500;
+  // BUG real señalado por Agus con captura (2 rondas): los captions de Work quedaban a opacidad
+  // PLENA superpuestos sobre las fotos de Team. El primer intento (fade sobre los últimos 500px
+  // de scroll ANTES de journeyBottom) seguía fallando: 500px es una constante fija que no tiene
+  // en cuenta el ALTO REAL del viewport — con una ventana más alta que 500px, el TOPE de Team ya
+  // puede estar VISIBLE en la mitad inferior de la pantalla mientras scrollY (el borde SUPERIOR
+  // del viewport) todavía está a más de 500px de journeyBottom, o sea el fade ni había arrancado.
+  // Fix real: medir contra el BORDE INFERIOR del viewport (scrollY+innerHeight) vs. el TOPE real
+  // de #team — la opacidad debe llegar a 0 con margen ANTES de que ese borde inferior alcance a
+  // Team, sin importar cuán alto sea el viewport.
+  const TAIL_FADE_LEAD_PX=500;    // empieza a apagarse cuando Team está a esta distancia de aparecer
+  const TAIL_FADE_SAFE_PX=200;    // debe llegar a 0 con ESTE margen antes de que Team sea visible
   function tailFade(){
-    const journeyBottom=workEl.offsetTop+workEl.offsetHeight;
-    return Math.max(0, Math.min(1, (journeyBottom-scrollY)/TAIL_FADE_PX));
+    const distToTeam=teamEl.offsetTop-(scrollY+innerHeight);
+    return Math.max(0, Math.min(1, (distToTeam-TAIL_FADE_SAFE_PX)/(TAIL_FADE_LEAD_PX-TAIL_FADE_SAFE_PX)));
   }
   let progress=0, camTargetY=0.8, camTargetZ=9, camLookTargetY=0;
   function updateFromScroll(){
