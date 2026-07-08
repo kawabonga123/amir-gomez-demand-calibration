@@ -460,21 +460,29 @@
   // sueltas — feedback de Agus tras ver el sitio: "hay que scrollear muchísimo", "condensar").
   // Siguen bajando por el MISMO eje (principio "un solo objeto eje" de Innovatron). El "gancho"
   // es un número corto en 3D (geometría barata), nombre+descripción van en DOM.
+  // BUG real señalado por Agus con captura: las placas de la IZQUIERDA de cada par se veían
+  // oscurecidas frente a su compañera de la derecha. Causa real: cada par tenía 2 colores
+  // distintos (una rampa marca oscuro->claro, pensada para progresión ENTRE secciones, como en
+  // STAGES) — pero acá ambos casos de un par se ven SIMULTÁNEAMENTE lado a lado, y por cómo se
+  // arma `CASES` (ci=0 siempre x=-1.6/izquierda, ci=1 siempre x=+1.6/derecha, ver más abajo), el
+  // color MÁS OSCURO del par terminaba siempre a la izquierda — no es azar, es sistemático en
+  // los 3 pares. Fix: mismo color (el más claro/vivo de cada par) para AMBOS casos — el par se ve
+  // parejo, y la rampa oscuro->claro se conserva ENTRE pares (pair0->pair2 sigue aclarando).
   const CASE_PAIRS=[
     { theme:'Close & Convert', cases:[
-      {color:0xe8551e, hook:'$1M+', name:'Webinar + VSL',
+      {color:0xf0611f, hook:'$1M+', name:'Webinar + VSL',
         caption:'B2B and B2C lending funnel with on-demand webinars. 5 deals closed for $1M+ in margin — from just $2,744 spent. Campaign still live.'},
       {color:0xf0611f, hook:'10X', name:'Lead Magnet B2B',
         caption:'Full funnel built end to end, lead magnet included. Ads varied up to 12× more often — cost per ICP lead cut from $50 to $5.'},
     ]},
     { theme:'Creative & Volume', cases:[
-      {color:0xff6a2b, hook:'7X', name:'UGC + AI',
+      {color:0xff7a3d, hook:'7X', name:'UGC + AI',
         caption:'20× more UGC volume than the existing creative, for a US legal company. ROAS climbed from 2× to 7×.'},
       {color:0xff7a3d, hook:'63K', name:'LeadGen B2C',
         caption:'Full-funnel $335K/yr social campaign for a home-decor leader. 63,000+ leads at $4.5 average cost.'},
     ]},
     { theme:'Channel Mastery', cases:[
-      {color:0xff8a52, hook:'3.7X', name:'PPC B2B',
+      {color:0xff9a68, hook:'3.7X', name:'PPC B2B',
         caption:'Google and Microsoft Ads over 18 months for an advertising agency. Revenue up 3.7×, ROI doubled with a TOFU/BOFU split.'},
       {color:0xff9a68, hook:'5.3X', name:'SEO + GEO',
         caption:'SEO and GEO tooling for a Texas trailer-industry leader. Organic traction up 5.3× in 2024 — 410,000+ organic visitors.'},
@@ -502,7 +510,16 @@
   // FontLoader arriba) — se mueven y se ven exactamente como la placa misma, sin cálculo de
   // visibilidad aparte, sin poder desincronizarse ni "sangrar" entre secciones nunca más.
 
-  const threadPts=[new THREE.Vector3(0,5.5,-0.4)];
+  // BUG real señalado por Agus con captura mobile: el tubo/hilo se veía "cortado" cerca del techo
+  // de pantalla en vez de seguir de largo fuera de cuadro — la punta de arriba (antes y=5.5)
+  // quedaba DENTRO del frustum visible en aspectos muy angostos/altos (mobile portrait extremo:
+  // aspectZScale llega a 2.3x, la cámara se aleja MUCHO para compensar el FOV angosto, y eso
+  // agranda la altura visible del frustum hasta ~8.8 unidades — casi el doble de lo que
+  // aguantaba la punta vieja). No es una costura real (es UNA sola curva/mesh, sin cortes) —
+  // es la punta de arriba haciéndose visible y pareciendo "empezar de la nada". Fix: subir la
+  // punta bien por encima de cualquier frustum razonable (18 vs ~8.8 necesarias, margen 2x).
+  const THREAD_TOP_Y=18;
+  const threadPts=[new THREE.Vector3(0,THREAD_TOP_Y,-0.4)];
   threadPts.push(new THREE.Vector3(0, CLOUD_Y, -0.4));   // el hilo también pasa por la nube de señal
   STAGES.forEach(s=>threadPts.push(new THREE.Vector3(s.x*0.5, s.y, -0.4)));
   // Work: el hilo pasa por el CENTRO de cada par (x=0), no por cada caso — en modo lado-a-lado
@@ -511,7 +528,7 @@
   CASE_PAIRS.forEach((pair,gi)=>threadPts.push(new THREE.Vector3(0, STAGES.at(-1).y-4-gi*PAIR_GAP, -0.4)));
   threadPts.push(new THREE.Vector3(0, CASES.at(-1).y-4, -0.4));
   const threadCurve=new THREE.CatmullRomCurve3(threadPts);
-  const TUBE_TOP=5.5, TUBE_BOTTOM=CASES.at(-1).y-4;
+  const TUBE_TOP=THREAD_TOP_Y, TUBE_BOTTOM=CASES.at(-1).y-4;
 
   // ---- Objeto Eje: partículas que ENVUELVEN el hilo entero (hero→última placa) y giran LOCALMENTE
   // con él (Rodrigues alrededor de la tangente) — no un giro global del grupo, que "swingearía". ----
@@ -597,9 +614,13 @@
         vec2 uv=gl_PointCoord-0.5; float d=length(uv);
         if(d>0.5) discard;
         float a=smoothstep(0.5,0.0,d);
-        vec3 chaosCol=vec3(0.54,0.50,0.47);   // demanda cruda: gris cálido apagado
-        vec3 signalCol=vec3(1.0,0.42,0.17);   // señal calibrada: naranja de marca A+ Growth
-        gl_FragColor=vec4(mix(chaosCol,signalCol,vOrder), a*0.9);  // normal blending: el color se mantiene, no lava
+        vec3 chaosCol=vec3(0.58,0.53,0.49);   // demanda cruda: gris cálido apagado
+        // Pedido de Agus: partículas más neón/brillantes, que refracten más a través de las placas
+        // (frostGlass samplea la escena de fondo — más brillo acá = más "vidrio esmerilado" real).
+        // R>1.0 a propósito: con ACESFilmicToneMapping activo, valores HDR por encima de 1.0 son
+        // los que el bloom engancha para dar el halo neón — en 1.0 exacto no había margen de sobra.
+        vec3 signalCol=vec3(1.35,0.46,0.16);  // señal calibrada: naranja de marca A+ Growth, HDR
+        gl_FragColor=vec4(mix(chaosCol,signalCol,vOrder), a);  // normal blending: el color se mantiene, no lava
       }`});
   const points=new THREE.Points(geo,mat); scene.add(points);
 
@@ -680,6 +701,10 @@
         // materia detrás sin poder leerla con nitidez, como vidrio esmerilado de verdad.
         float blurAmt=0.008+fres*0.01;
         ${behindCode}
+        // Pedido de Agus: que las partículas/hilo REFRACTEN más a través del vidrio (más vívido,
+        // no solo un tinte plano) — el vidrio ya deja pasar el fondo casi entero (matcapWeight
+        // bajo), así que el lever real es la intensidad de lo que se ve DETRÁS, no la mezcla.
+        behind*=1.3;
         vec3 outgoingLight=mix(behind, diffuseColor.rgb*matcapColor.rgb, ${matcapWeight});  // el fondo domina, difuminado
         // Boost de hover moderado (antes 1.4/0.65): el vidrio se volvía TAN brillante que su
         // brillo se filtraba a través del texto (casi-opaco desde el fix de arriba) y bajaba el
