@@ -101,33 +101,44 @@
   .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
     clip:rect(0,0,0,0);white-space:nowrap;border:0}
   .stage{min-height:100vh;min-height:100svh}
+  /* BUG real señalado por Agus con captura: el caption solo tenía text-shadow, ningún fondo
+     propio — se leía como texto flotando SOBRE el vidrio, no una pieza embebida en él. Fix:
+     panel real (fondo+blur+borde) que ocupa el mismo rect proyectado — box-sizing:border-box
+     para que el padding no ensanche el ancho que ya fija JS (projectedWidth). */
   .stage-copy{position:fixed;top:0;left:0;z-index:55;max-width:90vw;opacity:0;pointer-events:none;
-    will-change:transform,opacity,width;transition:opacity .5s var(--ease);text-align:center;
-    text-shadow:0 2px 16px rgba(0,0,0,.95),0 0 3px rgba(0,0,0,.95)}
+    box-sizing:border-box;will-change:transform,opacity,width;transition:opacity .5s var(--ease);
+    text-align:center;padding:1rem 1.3rem;border-radius:18px;
+    background:rgba(9,8,7,.46);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+    border:1px solid rgba(242,239,233,.14);
+    text-shadow:0 2px 12px rgba(0,0,0,.85)}
   .stage-copy.active{pointer-events:auto}
   /* Fuente más grande + más clara: el caption es contenido, no una nota al pie del vidrio
      (feedback de Agus). El ancho real lo fija JS cada frame (projectedWidth) para que quede
      literalmente CONTENIDO dentro del panel, nunca desbordado. */
   .stage-copy p{color:#eef2ef;font-size:clamp(1rem,1.7vw,1.22rem);line-height:1.48}
   .case-name{display:block;margin-bottom:.4rem;color:var(--brand)}
+  /* Texto de contexto embebido en el MISMO panel (antes eran spans sticky sueltos, ".cloud-eyebrow"
+     y ".pair-theme" — flotaban sin anclarse a nada, feedback de Agus: "no quiero texto flotando
+     sin contexto"). Ahora viven DENTRO de cada panel ya anclado, como una línea más chica arriba. */
+  .panel-eyebrow{display:block;margin-bottom:.5rem;font-size:.66rem;letter-spacing:.14em;
+    text-transform:uppercase;color:#9a948c}
   /* Work: placas más bajas (apaisadas) que Method — menos alto real debajo del hook 3D, la
      fuente crece menos para no desbordar el borde inferior del vidrio. */
   .case-copy p{font-size:clamp(.86rem,1.3vw,1rem);line-height:1.42}
 
-  /* ---- Signal Cloud: los 4 números más fuertes en un objeto 3D distinto (cúmulo de cristales,
+  /* ---- Signal Cloud: los 4 números más fuertes en un objeto 3D distinto (dial de calibración,
      no una placa más) — antes de Method. Los 4 captions se leen de a uno, docked como el resto. ---- */
   #signal .stage{min-height:100svh}
-  .cloud-eyebrow{position:sticky;top:6.5rem;margin-left:6vw;display:inline-block;color:var(--brand);z-index:2}
   .cloud-copy p{font-size:clamp(.85rem,1.3vw,1rem);line-height:1.42;max-width:24ch;margin:0 auto}
   /* Method: 3 pasos (fusionados de 5) — sigue sin justificar una pantalla completa cada uno,
      "demasiada distancia" (feedback de Agus) — ritmo de scroll más corto. */
   #method .stage{min-height:66svh}
 
   /* ---- Work: 6 casos agrupados de a PARES por tema (mitad del scroll que 6 pantallas sueltas,
-     más narrativo). El label de tema queda "sticky" mientras se recorre el par. En pantallas
-     angostas (mobile) las 2 placas del par se apilan centradas en vez de ir lado a lado — ver
-     PAIR_SIDE en JS: lado a lado excede el frustum comprimido en portrait angosto. ---- */
-  .pair-theme{position:sticky;top:6.5rem;margin-left:6vw;display:inline-block;color:var(--brand);z-index:2}
+     más narrativo). El nombre del tema (antes ".pair-theme" sticky, huérfano — feedback de Agus:
+     "no está conectado a ningún otro contenido") ahora es la primera línea DENTRO de cada panel
+     ya anclado (".panel-eyebrow"), no un span suelto. En pantallas angostas (mobile) las 2 placas
+     del par se apilan centradas en vez de ir lado a lado — ver PAIR_SIDE en JS. ---- */
   #work .stage{min-height:80svh}
   body.pairs-stack #work .stage{min-height:120svh}
 
@@ -196,23 +207,28 @@
     <span class="mono scroll-cue">scroll to calibrate ↓</span>
 
     <section id="signal" class="signal-cloud" aria-label="Results">
-      <!-- Los 4 números más fuertes, en un objeto 3D distinto a las placas (cúmulo de cristales,
-           ver JS) — no una caja plana más. El label queda sticky mientras se recorre la nube. -->
+      <!-- Los 4 números más fuertes, en un objeto 3D distinto a las placas (dial de calibración,
+           ver JS) — no una caja plana más. El eyebrow "Proof, not promises" antes era un span
+           sticky suelto; ahora vive DENTRO de cada panel ya anclado (feedback de Agus: nada de
+           texto flotando sin contenedor). -->
       <div class="stage" data-cloud="group">
-        <span class="mono cloud-eyebrow">Proof, not promises</span>
         <div class="stage-copy cloud-copy">
+          <span class="mono panel-eyebrow">Proof, not promises</span>
           <h2 class="sr-only">$1M+ in margin from $2,744 in ad spend.</h2>
           <p>margin closed from just $2,744 in ad spend — one webinar funnel, still live.</p>
         </div>
         <div class="stage-copy cloud-copy">
+          <span class="mono panel-eyebrow">Proof, not promises</span>
           <h2 class="sr-only">10× lower cost per lead.</h2>
           <p>lower cost per qualified lead — from $50 down to $5.</p>
         </div>
         <div class="stage-copy cloud-copy">
+          <span class="mono panel-eyebrow">Proof, not promises</span>
           <h2 class="sr-only">7× ROAS.</h2>
           <p>ROAS after scaling UGC + AI creative — up from 2×.</p>
         </div>
         <div class="stage-copy cloud-copy">
+          <span class="mono panel-eyebrow">Proof, not promises</span>
           <h2 class="sr-only">63,000 leads.</h2>
           <p>leads generated at $4.5 average cost — a single social funnel.</p>
         </div>
@@ -249,42 +265,46 @@
     <section id="work" aria-label="Work">
       <!-- 6 casos agrupados de a PARES por tema (mitad del scroll de 6 pantallas sueltas, más
            narrativo). El número-resultado es geometría 3D hija de la placa; nombre+descripción
-           quedan en DOM, anclados bajo cada placa cada frame (dockCaseCopies, ver JS). El label
-           de tema (.pair-theme) es sticky: no depende de proyección 3D, es contenido de flujo. -->
+           quedan en DOM, anclados bajo cada placa cada frame (dockCaseCopies, ver JS). El nombre
+           del tema (antes ".pair-theme" sticky, huérfano) ahora es la primera línea DENTRO de
+           cada panel ya anclado — nunca un span suelto sin contenedor. -->
       <div class="stage" data-pair="0">
-        <span class="mono pair-theme">Close &amp; Convert</span>
         <div class="stage-copy case-copy">
+          <span class="mono panel-eyebrow">Close &amp; Convert</span>
           <span class="mono case-name">Webinar + VSL</span>
           <h2 class="sr-only">$1M+ in margin from $2,744 in ad spend.</h2>
           <p>B2B and B2C lending funnel with on-demand webinars. 5 deals closed, campaign still live.</p>
         </div>
         <div class="stage-copy case-copy">
+          <span class="mono panel-eyebrow">Close &amp; Convert</span>
           <span class="mono case-name">Lead Magnet B2B</span>
           <h2 class="sr-only">10× lower cost per lead.</h2>
           <p>Full funnel incl. the lead magnet. Ads varied up to 12× more often — cost per ICP lead cut from $50 to $5.</p>
         </div>
       </div>
       <div class="stage" data-pair="1">
-        <span class="mono pair-theme">Creative &amp; Volume</span>
         <div class="stage-copy case-copy">
+          <span class="mono panel-eyebrow">Creative &amp; Volume</span>
           <span class="mono case-name">UGC + AI</span>
           <h2 class="sr-only">7× ROAS, up from 2×.</h2>
           <p>20× more UGC volume than the existing creative, for a US legal company.</p>
         </div>
         <div class="stage-copy case-copy">
+          <span class="mono panel-eyebrow">Creative &amp; Volume</span>
           <span class="mono case-name">LeadGen B2C</span>
           <h2 class="sr-only">63,000 leads at $4.5 average cost.</h2>
           <p>$335K/yr social campaign for a home-decor leader, full funnel built end to end.</p>
         </div>
       </div>
       <div class="stage" data-pair="2">
-        <span class="mono pair-theme">Channel Mastery</span>
         <div class="stage-copy case-copy">
+          <span class="mono panel-eyebrow">Channel Mastery</span>
           <span class="mono case-name">PPC B2B</span>
           <h2 class="sr-only">3.7× revenue growth.</h2>
           <p>Google and Microsoft Ads over 18 months. ROI doubled with a TOFU/BOFU split.</p>
         </div>
         <div class="stage-copy case-copy">
+          <span class="mono panel-eyebrow">Channel Mastery</span>
           <span class="mono case-name">SEO + GEO</span>
           <h2 class="sr-only">5.3× organic traction.</h2>
           <p>SEO and GEO tooling for a Texas trailer-industry leader — 410,000+ organic visitors in 2024.</p>
@@ -420,10 +440,15 @@
   // nube perdida en mobile) — a esa distancia, cualquier gap "vacío" entre secciones se siente
   // más largo que antes (mismo scroll, más zoom). Gaps apretados a propósito: cloud→method=3,
   // method spacing=5, method→work=4 (antes 8) — menos "viaje vacío", verificado con captura real.
+  // BUG real visto en captura de Chrome (feedback de Agus): con STAGES[0].y=-12, la placa de
+  // Method (alto 3.8, mitad 1.9) llegaba a solapar en el mundo 3D con el dial "7X" de la nube
+  // (radio ~1, y hasta -10.3) — no era un efecto de cámara de transición, los dos OBJETOS ocupaban
+  // el mismo rango de Y. Shift de -3 a las 3 etapas (y todo lo que cuelga de STAGES.at(-1), como
+  // CASES/hilo, más abajo) para dejar un gap limpio de ~1.75 unidades.
   const STAGES=[
-    {y:-12, x:-0.7, color:0x6b645c, lines:['UNDERSTAND','& CREATE']},          // Discovery+Strategy
-    {y:-17, x: 0.7, color:0xe8551e, lines:['SHIP &','MEASURE']},               // Implementation+Measurement
-    {y:-22, x:-0.5, color:0xff7a3d, lines:['THE SIGNAL','COMPOUNDS']},        // Signal
+    {y:-15, x:-0.7, color:0x6b645c, lines:['UNDERSTAND','& CREATE']},          // Discovery+Strategy
+    {y:-20, x: 0.7, color:0xe8551e, lines:['SHIP &','MEASURE']},               // Implementation+Measurement
+    {y:-25, x:-0.5, color:0xff7a3d, lines:['THE SIGNAL','COMPOUNDS']},        // Signal
   ];
   // ---- Work: 6 casos reales agrupados de a PARES por tema (mitad del scroll de 6 pantallas
   // sueltas — feedback de Agus tras ver el sitio: "hay que scrollear muchísimo", "condensar").
@@ -664,8 +689,12 @@
         float blurAmt=0.008+fres*0.01;
         ${behindCode}
         vec3 outgoingLight=mix(behind, diffuseColor.rgb*matcapColor.rgb, ${matcapWeight});  // el fondo domina, difuminado
-        outgoingLight+=fres*vec3(0.97,0.92,0.85)*(0.22+uHover*1.4);     // rim cálido (antes blanco-cian), se dispara al hover
-        outgoingLight+=uNeon*(0.1+uHover*0.65)*${neonStrength};          // tinte de etapa SIEMPRE presente, se dispara al hover
+        // Boost de hover moderado (antes 1.4/0.65): el vidrio se volvía TAN brillante que su
+        // brillo se filtraba a través del texto (casi-opaco desde el fix de arriba) y bajaba el
+        // contraste igual — "más brillo, no más contraste" (feedback de Agus). Con el texto ya
+        // opaco, este boost solo debe iluminar el VIDRIO, no competir con la letra.
+        outgoingLight+=fres*vec3(0.97,0.92,0.85)*(0.22+uHover*0.9);     // rim cálido (antes blanco-cian), se dispara al hover
+        outgoingLight+=uNeon*(0.1+uHover*0.45)*${neonStrength};          // tinte de etapa SIEMPRE presente, se dispara al hover
         diffuseColor.a=mix(diffuseColor.a,0.92,uHover);                  // más opaca/visible al hover
         `
       );
@@ -755,11 +784,18 @@
     mesh.scale.set(1.6,2.1,1.6);
     return mesh;
   }
+  // el anillo+ticks+aguja giran lentamente (pedido de Agus: "deberían estar girando lentamente")
+  // en un sub-group aparte — el NÚMERO queda en el group exterior, sin rotar, siempre derecho y
+  // legible (si todo el dial girara junto, el texto pasaría boca abajo la mitad del tiempo).
   const cloudGroups=CLOUD_STATS.map((s,i)=>{
     const group=new THREE.Group();
-    group.add(makeDialRing(s.color));
-    group.add(makeDialTicks());
-    group.add(makeDialNeedle(s.color, Math.PI*0.35+i*1.7));   // ángulo distinto por número, no alineados
+    const spin=new THREE.Group();
+    spin.add(makeDialRing(s.color));
+    spin.add(makeDialTicks());
+    spin.add(makeDialNeedle(s.color, Math.PI*0.35+i*1.7));   // ángulo distinto por número, no alineados
+    group.add(spin);
+    group.userData.spin=spin;
+    group.userData.spinSpeed=0.045*(i%2===0?1:-1);   // sentido alternado por número, no todos iguales
     group.position.set(s.x, s.y, 0);
     scene.add(group);
     return group;
@@ -790,6 +826,13 @@
       // contraste, más que la elección de color. Fix: empujarlo al array (mismo que las placas).
       const titleMat=frostGlass(makeTextMatcap(), s.color, {matcapWeight:0.78, neonStrength:0.3});
       plateMaterials.push(titleMat);
+      // BUG real señalado por Agus: "cuando apunto a la placa, no se lee bien — necesita
+      // contraste, no solo brillo". Causa: frostGlass deja opacity:0.6 de base (pensado para
+      // vidrio, no para texto) — al hover la PLACA detrás se vuelve más opaca/neón (uHover sube
+      // diffuseColor.a a 0.92 y el rim), y esa placa más brillante se filtra a través del texto
+      // semi-transparente (60% opaco) y lo "lava". Fix: el texto casi opaco siempre — así lo que
+      // cambia con el hover es el vidrio de ATRÁS, no el texto que hay que leer.
+      titleMat.opacity=0.96;
       const lineHeight=0.62, size=0.42, totalH=(s.lines.length-1)*lineHeight;
       s.lines.forEach((line,li)=>{
         // OJO (bug real): la propiedad de profundidad de TextGeometry se llama "height", NO
@@ -813,6 +856,7 @@
       const plate=casePlates[i];
       const hookMat=frostGlass(makeTextMatcap(), c.color, {matcapWeight:0.78, neonStrength:0.3});   // mismo bug/fix que titleMat arriba
       plateMaterials.push(hookMat);
+      hookMat.opacity=0.96;   // mismo fix de contraste en hover que titleMat (ver arriba)
       const geo=new TextGeometry(c.hook,{font,size:0.62,height:0.16,curveSegments:6,
         bevelEnabled:true,bevelThickness:0.024,bevelSize:0.016,bevelSegments:3});
       geo.computeBoundingBox();
@@ -836,6 +880,7 @@
       // renderBackdrop() cada frame, igual que las placas de Method/Work.
       const hookMat=frostGlass(makeTextMatcap(), s.color, {matcapWeight:0.78, neonStrength:0.3});
       plateMaterials.push(hookMat);
+      hookMat.opacity=0.96;   // mismo fix de contraste que titleMat (consistencia, aunque el dial no tiene hover)
       const geo=new TextGeometry(s.hook,{font,size:0.38,height:0.12,curveSegments:6,
         bevelEnabled:true,bevelThickness:0.018,bevelSize:0.012,bevelSegments:3});
       geo.computeBoundingBox();
@@ -928,6 +973,16 @@
   // "false" (el último estado bueno) mientras la placa ya estaba lejos. Fix definitivo: función
   // que lee scrollY EN VIVO cada vez que se llama, nunca un booleano cacheado.
   function isBeyondJourney(){ return scrollY>(workEl.offsetTop+workEl.offsetHeight); }
+  // BUG real señalado por Agus con captura: los captions de Work quedaban a opacidad PLENA justo
+  // hasta el corte duro de isBeyondJourney — en el viewport de transición, Team ya se veía (viene
+  // pegado justo después en el flujo normal del documento) mientras el último caso todavía se leía
+  // a full sobre las fotos. Fix: un fade de cola que empieza ANTES del final real, para que la
+  // opacidad ya haya llegado a 0 con margen cuando el contenido de Team entra en el viewport.
+  const TAIL_FADE_PX=500;
+  function tailFade(){
+    const journeyBottom=workEl.offsetTop+workEl.offsetHeight;
+    return Math.max(0, Math.min(1, (journeyBottom-scrollY)/TAIL_FADE_PX));
+  }
   let progress=0, camTargetY=0.8, camTargetZ=9, camLookTargetY=0;
   function updateFromScroll(){
     // uOrder: el caos se calibra durante el Hero (para cuando aparece la nube de señal, la
@@ -1050,7 +1105,7 @@
       el.style.width=Math.round(availW)+'px';
       el.style.transform=`translate3d(${Math.round(p.x-availW/2)}px,${Math.round(p.y)}px,0)`;
       const dist=Math.abs(camLook.y-c.y);
-      const op=Math.max(0,Math.min(1,1-dist/5))*gate;   // gate: nunca visible fuera de Work (fix bleed)
+      const op=Math.max(0,Math.min(1,1-dist/5))*gate*tailFade();   // gate+cola: nunca visible fuera de Work, y se apaga ANTES de que Team aparezca en el viewport
       el.style.opacity=op; el.classList.toggle('active',op>0.55);
       caseProximity[i]=op;
     }
@@ -1104,6 +1159,9 @@
     camera.position.x+=((progress<0.14?pointerX*1.4:0)-camera.position.x)*0.06;
     camLook.y+=(camLookTargetY-camLook.y)*0.06;
     camera.lookAt(camLook);
+    // los diales de PROOF giran lentamente (pedido de Agus) — solo el sub-group ring+ticks+aguja,
+    // el número queda quieto y derecho (ver comentario en cloudGroups).
+    cloudGroups.forEach(g=>{ g.userData.spin.rotation.z=t*g.userData.spinSpeed; });
     dockCloudCopies(); dockStageCopies(); dockCaseCopies();   // texto anclado al borde proyectado de su placa — una sola pieza
     // hover neón: en mouse, la placa apuntada se enciende a full. En touch no hay mousemove
     // (nunca se dispara), así que la reemplazamos por un glow suave y automático basado en
@@ -1129,6 +1187,7 @@
     for(let i=0;i<shotFrames;i++){
       uniforms.uTime.value=i*0.03; uniforms.uForce.value*=0.94;
       threadUniforms.uTime.value=i*0.03;
+      cloudGroups.forEach(g=>{ g.userData.spin.rotation.z=(i*0.03)*g.userData.spinSpeed; });
       camera.lookAt(camLook); dockCloudCopies(); dockStageCopies(); dockCaseCopies(); renderBackdrop(); composer.render();
     }
     console.log('[amir] shot listo (sync)');
