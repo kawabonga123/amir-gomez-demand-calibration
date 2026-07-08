@@ -131,39 +131,45 @@
   #signal .stage{min-height:100svh}
   .cloud-copy p{font-size:clamp(.85rem,1.3vw,1rem);line-height:1.42;max-width:24ch;margin:0 auto}
   /* Method: 3 pasos (fusionados de 5) — sigue sin justificar una pantalla completa cada uno,
-     "demasiada distancia" (feedback de Agus) — ritmo de scroll más corto. */
-  #method .stage{min-height:66svh}
+     "demasiada distancia" (feedback de Agus) — ritmo de scroll más corto. F6 (plan de rediseño,
+     meta ≤6.5 pantallas totales): 66→60svh, el valor que pide el plan. */
+  #method .stage{min-height:60svh}
 
   /* ---- Work: 6 casos agrupados de a PARES por tema (mitad del scroll que 6 pantallas sueltas,
      más narrativo). El nombre del tema (antes ".pair-theme" sticky, huérfano — feedback de Agus:
      "no está conectado a ningún otro contenido") ahora es la primera línea DENTRO de cada panel
      ya anclado (".panel-eyebrow"), no un span suelto. En pantallas angostas (mobile) las 2 placas
-     del par se apilan centradas en vez de ir lado a lado — ver PAIR_SIDE en JS. ---- */
-  #work .stage{min-height:80svh}
-  body.pairs-stack #work .stage{min-height:120svh}
+     del par se apilan centradas en vez de ir lado a lado — ver PAIR_SIDE en JS. F6 (meta ≤6.5
+     pantallas): 80→70svh (valor del plan), apilado 120→105svh proporcional. ---- */
+  #work .stage{min-height:70svh}
+  body.pairs-stack #work .stage{min-height:105svh}
 
   /* ---- Team: DOM puro, sin 3D (el eje ya terminó en Work) — Amir protagonista (columna más ancha) ---- */
   /* BUG P0 real, visto con captura de Chrome (auditoría /taste): Team/Services se dibujaban
      ENCIMA de las placas 3D de Work (el canvas fixed sigue detrás, sin fondo propio). Fix: fondo
      sólido con un degradé corto arriba (la última placa se "apaga" suave en vez de un corte
      brusco) — de acá en adelante el sitio vive en DOM limpio, el mundo 3D ya cerró. */
-  .team{padding:8rem 6vw 6rem;position:relative;z-index:4;
+  /* F6 (meta ≤6.5 pantallas): padding vertical recortado (8/6rem→5/4rem), gap y margen del
+     cierre más chicos — Team era la sección más pesada del tramo DOM sin ganar legibilidad real
+     con tanto aire. Las fotos (aspect-ratio 1/1) siguen fijando el piso de altura real. */
+  .team{padding:5rem 6vw 4rem;position:relative;z-index:4;
     background:linear-gradient(to bottom, transparent 0, var(--bg) 9rem, var(--bg) 100%)}
-  .team-eyebrow{display:block;margin-bottom:2.4rem}
-  .team-grid{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:2.6rem;max-width:1100px}
+  .team-eyebrow{display:block;margin-bottom:1.8rem}
+  .team-grid{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:2rem;max-width:1100px}
   .member img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:14px;display:block}
-  .member h3{margin-top:1.2rem;font-size:1.15rem;font-weight:700}
-  .member .role{display:block;margin:.35rem 0 .8rem;color:var(--brand)}
+  .member h3{margin-top:1rem;font-size:1.15rem;font-weight:700}
+  .member .role{display:block;margin:.3rem 0 .7rem;color:var(--brand)}
   .member p{color:#c4ccc9;font-size:.85rem;line-height:1.5;max-width:32ch}
-  .team-note{margin-top:3rem;letter-spacing:.16em}
+  .team-note{margin-top:2rem;letter-spacing:.16em}
   @media(max-width:820px){
-    .team-grid{grid-template-columns:1fr;gap:2.2rem;max-width:420px}
+    .team-grid{grid-template-columns:1fr;gap:1.8rem;max-width:420px}
     .member p{max-width:none}
   }
 
   /* ---- Services: lista simple, sin placas — evita fatiga de vidrio antes de Contact ---- */
-  .services{padding:5rem 6vw;position:relative;z-index:4;background:var(--bg)}
-  .services-eyebrow{display:block;margin-bottom:2rem}
+  /* F6: padding recortado (5rem→3.5rem) — misma lógica que Team. */
+  .services{padding:3.5rem 6vw;position:relative;z-index:4;background:var(--bg)}
+  .services-eyebrow{display:block;margin-bottom:1.5rem}
   .services-list{list-style:none;max-width:760px}
   .services-list li{border-top:1px solid rgba(242,239,233,.18);padding:1.1rem 0;
     font-size:clamp(1.1rem,2.6vw,1.6rem);font-weight:500}
