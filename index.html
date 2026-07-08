@@ -132,9 +132,14 @@
   body.pairs-stack #work .stage{min-height:120svh}
 
   /* ---- Team: DOM puro, sin 3D (el eje ya terminó en Work) — Amir protagonista (columna más ancha) ---- */
-  .team{padding:8rem 6vw 6rem;max-width:1100px}
+  /* BUG P0 real, visto con captura de Chrome (auditoría /taste): Team/Services se dibujaban
+     ENCIMA de las placas 3D de Work (el canvas fixed sigue detrás, sin fondo propio). Fix: fondo
+     sólido con un degradé corto arriba (la última placa se "apaga" suave en vez de un corte
+     brusco) — de acá en adelante el sitio vive en DOM limpio, el mundo 3D ya cerró. */
+  .team{padding:8rem 6vw 6rem;position:relative;z-index:4;
+    background:linear-gradient(to bottom, transparent 0, var(--bg) 9rem, var(--bg) 100%)}
   .team-eyebrow{display:block;margin-bottom:2.4rem}
-  .team-grid{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:2.6rem}
+  .team-grid{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:2.6rem;max-width:1100px}
   .member img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:14px;display:block}
   .member h3{margin-top:1.2rem;font-size:1.15rem;font-weight:700}
   .member .role{display:block;margin:.35rem 0 .8rem;color:var(--brand)}
@@ -146,15 +151,16 @@
   }
 
   /* ---- Services: lista simple, sin placas — evita fatiga de vidrio antes de Contact ---- */
-  .services{padding:5rem 6vw;max-width:760px}
+  .services{padding:5rem 6vw;position:relative;z-index:4;background:var(--bg)}
   .services-eyebrow{display:block;margin-bottom:2rem}
-  .services-list{list-style:none}
+  .services-list{list-style:none;max-width:760px}
   .services-list li{border-top:1px solid rgba(242,239,233,.18);padding:1.1rem 0;
     font-size:clamp(1.1rem,2.6vw,1.6rem);font-weight:500}
   .services-list li:last-child{border-bottom:1px solid rgba(242,239,233,.18)}
 
   /* ---- Contact + footer ---- */
-  .contact{min-height:100vh;min-height:100svh;display:flex;flex-direction:column;justify-content:center;padding:6rem 6vw}
+  .contact{min-height:100vh;min-height:100svh;display:flex;flex-direction:column;justify-content:center;padding:6rem 6vw;
+    position:relative;z-index:4;background:var(--bg)}
   .contact-eyebrow{display:block;margin-bottom:1.6rem}
   .contact h2{font-weight:700;letter-spacing:-.03em;line-height:1.02;font-size:clamp(2.2rem,7vw,5rem);max-width:14ch}
   .contact-actions{margin-top:2.6rem;display:flex;flex-direction:column;align-items:flex-start;gap:1.2rem}
@@ -162,7 +168,7 @@
     transition:color .3s var(--ease),border-color .3s var(--ease)}
   .contact-alt:hover{color:var(--brand);border-color:var(--brand)}
   .site-footer{padding:2.4rem 6vw max(2.4rem,env(safe-area-inset-bottom));display:flex;justify-content:space-between;
-    align-items:center;flex-wrap:wrap;gap:.6rem}
+    align-items:center;flex-wrap:wrap;gap:.6rem;position:relative;z-index:4;background:var(--bg)}
 
   @media(prefers-reduced-motion:reduce){.grain{animation:none}.stage-copy{opacity:1;transform:none;transition:none}}
 </style>
@@ -218,19 +224,22 @@
            y textura propia por etapa. El <h2> queda solo para lectores de pantalla (sr-only);
            el párrafo sigue siendo texto DOM legible, anclado bajo la placa. -->
       <div class="stage" data-stage="0">
-        <div class="stage-copy">
+        <div class="stage-copy method-copy">
+          <span class="mono case-name">Step 01</span>
           <h2 class="sr-only">Understand the system, then create.</h2>
           <p>Deep discovery on the business model, audience and funnel assets, then creative built at volume — ads varied up to 12× more often than standard, always on-brand.</p>
         </div>
       </div>
       <div class="stage" data-stage="1">
-        <div class="stage-copy">
+        <div class="stage-copy method-copy">
+          <span class="mono case-name">Step 02</span>
           <h2 class="sr-only">Ship the funnel, then measure everything.</h2>
           <p>Meticulous measurement plan, then fast implementation — speed is part of the strategy. Everything measurable gets measured and improved, so budget only follows what moves revenue.</p>
         </div>
       </div>
       <div class="stage" data-stage="2">
-        <div class="stage-copy">
+        <div class="stage-copy method-copy">
+          <span class="mono case-name">Step 03</span>
           <h2 class="sr-only">The signal compounds.</h2>
           <p>Winners get budget, losers get killed. The signal tells you exactly what to scale next — compounding every week the funnel keeps running.</p>
         </div>
@@ -391,20 +400,28 @@
   // números no tienen el mismo impacto que las placas", "ponelos en un objeto 3D distinto,
   // como una nube". No es una caja plana más: un cúmulo de cristales icosaédricos (barato via
   // InstancedMesh) alrededor de cada número — mismo eje/journey, geometría genuinamente distinta.
-  const CLOUD_Y=-4;
+  // CLOUD_Y bajado de -4 a -9: en -4 la nube asomaba (parcialmente visible) durante el Hero —
+  // verificado con captura real de Chrome (hallazgo /taste 2026-07-08). A -9 queda fuera del
+  // encuadre inicial de cámara (y=0.8 mirando a y=0), solo aparece cuando el scroll la trae.
+  const CLOUD_Y=-9;
   const CLOUD_STATS=[
-    {hook:'$1M+', color:0xe8551e, dx:-1.0, dy: 0.75, caption:'margin closed from just $2,744 in ad spend — one webinar funnel, still live.'},
-    {hook:'10X',  color:0xf0611f, dx: 1.0, dy: 0.7,  caption:'lower cost per qualified lead — from $50 down to $5.'},
-    {hook:'7X',   color:0xff6a2b, dx:-0.95,dy:-0.75, caption:'ROAS after scaling UGC + AI creative — up from 2×.'},
-    {hook:'63K',  color:0xff7a3d, dx: 0.95,dy:-0.7,  caption:'leads generated at $4.5 average cost — a single social funnel.'},
+    {hook:'$1M+', color:0xe8551e, dx:-1.5, dy: 0.9,  caption:'margin closed from just $2,744 in ad spend — one webinar funnel, still live.'},
+    {hook:'10X',  color:0xf0611f, dx: 1.5, dy: 0.55, caption:'lower cost per qualified lead — from $50 down to $5.'},
+    {hook:'7X',   color:0xff6a2b, dx:-1.4, dy:-1.05, caption:'ROAS after scaling UGC + AI creative — up from 2×.'},
+    {hook:'63K',  color:0xff7a3d, dx: 1.4, dy:-0.7,  caption:'leads generated at $4.5 average cost — a single social funnel.'},
   ].map(s=>Object.assign({},s,{x:s.dx, y:CLOUD_Y+s.dy}));
 
   // 5→3 pasos (fusionados): feedback de Agus, "demasiadas placas, demasiada distancia" — 2 pasos
   // cortos que compartían el mismo espíritu (descubrir+crear, ejecutar+medir) pasan a ser uno solo.
+  // Arrancan bien debajo de la nube (gap real, no encimados) — ver sectionGate() para el corte limpio.
+  // OJO: la cámara ahora satura Z rápido y se queda CERCA durante todo el recorrido (fix de la
+  // nube perdida en mobile) — a esa distancia, cualquier gap "vacío" entre secciones se siente
+  // más largo que antes (mismo scroll, más zoom). Gaps apretados a propósito: cloud→method=3,
+  // method spacing=5, method→work=4 (antes 8) — menos "viaje vacío", verificado con captura real.
   const STAGES=[
-    {y:-8,  x:-0.7, color:0x6b645c, lines:['UNDERSTAND','& CREATE']},          // Discovery+Strategy
-    {y:-14, x: 0.7, color:0xe8551e, lines:['SHIP &','MEASURE']},               // Implementation+Measurement
-    {y:-20, x:-0.5, color:0xff7a3d, lines:['THE SIGNAL','COMPOUNDS']},        // Signal
+    {y:-12, x:-0.7, color:0x6b645c, lines:['UNDERSTAND','& CREATE']},          // Discovery+Strategy
+    {y:-17, x: 0.7, color:0xe8551e, lines:['SHIP &','MEASURE']},               // Implementation+Measurement
+    {y:-22, x:-0.5, color:0xff7a3d, lines:['THE SIGNAL','COMPOUNDS']},        // Signal
   ];
   // ---- Work: 6 casos reales agrupados de a PARES por tema (mitad del scroll de 6 pantallas
   // sueltas — feedback de Agus tras ver el sitio: "hay que scrollear muchísimo", "condensar").
@@ -433,10 +450,10 @@
   // x: PAIR_SIDE (desktop/tablet) → los 2 casos van lado a lado (±1.3, placas más angostas,
   // ver caseGeo). !PAIR_SIDE (mobile angosto) → apilados y centrados (x:0, mismo fix anti-recorte
   // ya verificado en la ronda anterior: cualquier offset lateral con placa ancha se recorta).
-  const PAIR_GAP=6;
+  const PAIR_GAP=5;
   const CASES=[];
   CASE_PAIRS.forEach((pair,gi)=>{
-    const groupY=STAGES.at(-1).y-8-gi*PAIR_GAP;
+    const groupY=STAGES.at(-1).y-4-gi*PAIR_GAP;
     pair.cases.forEach((c,ci)=>{
       CASES.push(Object.assign({},c,{
         y: PAIR_SIDE ? groupY : groupY-ci*2.6,
@@ -444,13 +461,35 @@
       }));
     });
   });
+
+  // ---- BUG P0 real, visto con captura de Chrome (auditoría /taste 2026-07-08): los captions de
+  // la nube "sangraban" dentro de las placas de Method — la opacidad de cada sistema de docking
+  // (cloud/stage/case) se calculaba SOLO por distancia a SU PROPIO objeto (1-dist/5), sin importar
+  // si la cámara estaba realmente en esa sección. Con las 3 secciones a menos de 5 unidades entre
+  // sí, dos sistemas podían estar visibles a la vez. Fix: un gate DURO por sección — cada sistema
+  // solo puede mostrar texto si la cámara está dentro de su rango de Y (con una zona de fundido
+  // entre secciones para que no sea un corte brusco).
+  const CLOUD_TOP_Y=Math.max(...CLOUD_STATS.map(s=>s.y))+2;      // límite superior (nunca se usa, hero no dockea nada)
+  const CLOUD_BOTTOM_Y=(Math.min(...CLOUD_STATS.map(s=>s.y))+STAGES[0].y)/2;   // punto medio nube↔method
+  const METHOD_BOTTOM_Y=(STAGES.at(-1).y+CASES[0].y)/2;                       // punto medio method↔work
+  // BUG real encontrado con captura: al apretar los gaps entre secciones (fix de "viaje vacío
+  // muy largo"), la pluma de 3 unidades del gate quedaba MÁS ANCHA que el gap mismo — el caption
+  // de Work ya se filtraba (33% de opacidad) estando la cámara centrada en la ÚLTIMA placa de
+  // Method. Pluma más angosta: cierra del todo antes de llegar a la placa vecina, verificado.
+  const GATE_FEATHER=0.8;
+  function sectionGate(camY, topY, bottomY, feather){
+    const gTop=Math.min(1,Math.max(0,(topY+feather-camY)/feather));
+    const gBottom=Math.min(1,Math.max(0,(camY-(bottomY-feather))/feather));
+    return Math.min(gTop,gBottom);
+  }
+
   const threadPts=[new THREE.Vector3(0,5.5,-0.4)];
   threadPts.push(new THREE.Vector3(0, CLOUD_Y, -0.4));   // el hilo también pasa por la nube de señal
   STAGES.forEach(s=>threadPts.push(new THREE.Vector3(s.x*0.5, s.y, -0.4)));
   // Work: el hilo pasa por el CENTRO de cada par (x=0), no por cada caso — en modo lado-a-lado
   // los casos están en x=±1.3 y seguirlos haría zigzaguear el hilo; el eje pasa detrás/entre
   // ambas placas, que quedan simétricas a los costados.
-  CASE_PAIRS.forEach((pair,gi)=>threadPts.push(new THREE.Vector3(0, STAGES.at(-1).y-8-gi*PAIR_GAP, -0.4)));
+  CASE_PAIRS.forEach((pair,gi)=>threadPts.push(new THREE.Vector3(0, STAGES.at(-1).y-4-gi*PAIR_GAP, -0.4)));
   threadPts.push(new THREE.Vector3(0, CASES.at(-1).y-4, -0.4));
   const threadCurve=new THREE.CatmullRomCurve3(threadPts);
   const TUBE_TOP=5.5, TUBE_BOTTOM=CASES.at(-1).y-4;
@@ -481,7 +520,10 @@
     chaosOff[i*3+1]=Math.sin(cz)*cr*0.65;
     chaosOff[i*3+2]=Math.sin(ca)*Math.cos(cz)*cr;
     rnd[i]=Math.random();
-    bigZ[i]=(i%31===0)?(0.35+Math.random()*0.55):0;   // ~3% flotan adelante (hacia cámara), sobre el plano de las placas
+    // BUG P0 real, visto con captura de Chrome: estas partículas "adelante" (z hasta 0.9) flotaban
+    // literalmente ENCIMA del texto 3D (z=0.15) tapándolo — se ven cruzando los títulos en pantalla.
+    // Menos frecuencia y menos profundidad: sigue dando aire/profundidad sin competir con la lectura.
+    bigZ[i]=(i%70===0)?(0.15+Math.random()*0.18):0;   // ~1.4%, máx 0.33 (antes 3%, máx 0.9)
   }
   const geo=new THREE.BufferGeometry();
   geo.setAttribute('position',new THREE.BufferAttribute(center.slice(),3));
@@ -562,7 +604,19 @@
   // samplea esa textura con la UV distorsionada por su normal — así se ve de verdad lo que hay
   // detrás (hilo + partículas), marmolado, como en la referencia (pantalla Xbox), no un tinte plano.
   // expone uHover (0→1): al apuntar/raycast, el borde se enciende NEÓN en el color de la etapa.
-  function frostGlass(matcap,color){
+  // opts.matcapWeight/neonStrength: F3 (auditoría /taste) — el texto 3D usaba los MISMOS pesos
+  // que el vidrio plano (backdrop dominante al 72%, tinte de marca siempre encendido), compitiendo
+  // contra el propio matcap brillante cian-blanco pensado para contraste. Los títulos/hooks pasan
+  // valores más altos de matcapWeight y más bajos de neonStrength — letras sólidas y legibles,
+  // no otro panel de vidrio más encima del vidrio.
+  function frostGlass(matcap,color,opts){
+    // OJO (bug real, encontrado hoy — costó bastante diagnosticar): estos valores se interpolan
+    // directo en el GLSL vía template string. JS Number(1).toString()==="1" (sin decimal), pero
+    // GLSL ES exige el punto ("1.0") para literales float — "vec3 * 1" es un error de tipo que
+    // aborta la compilación del shader ENTERO (nada se dibuja, sin error visible en consola JS,
+    // solo un WebGL INVALID_OPERATION genérico). .toFixed(3) garantiza el punto siempre.
+    const matcapWeight=((opts&&opts.matcapWeight)||0.28).toFixed(3);
+    const neonStrength=((opts&&opts.neonStrength!=null)?opts.neonStrength:1).toFixed(3);
     const uHover={value:0};
     const m=new THREE.MeshMatcapMaterial({matcap,color:0xffffff,transparent:true,opacity:0.6,depthWrite:false});
     // El blur de 5 muestras (5 texture2D por píxel, en CADA placa) es el costo recurrente más
@@ -607,9 +661,9 @@
         // materia detrás sin poder leerla con nitidez, como vidrio esmerilado de verdad.
         float blurAmt=0.008+fres*0.01;
         ${behindCode}
-        vec3 outgoingLight=mix(behind, diffuseColor.rgb*matcapColor.rgb, 0.28);  // el fondo domina, difuminado
+        vec3 outgoingLight=mix(behind, diffuseColor.rgb*matcapColor.rgb, ${matcapWeight});  // el fondo domina, difuminado
         outgoingLight+=fres*vec3(0.97,0.92,0.85)*(0.22+uHover*1.4);     // rim cálido (antes blanco-cian), se dispara al hover
-        outgoingLight+=uNeon*(0.1+uHover*0.65);                          // tinte de etapa SIEMPRE presente, se dispara al hover
+        outgoingLight+=uNeon*(0.1+uHover*0.65)*${neonStrength};          // tinte de etapa SIEMPRE presente, se dispara al hover
         diffuseColor.a=mix(diffuseColor.a,0.92,uHover);                  // más opaca/visible al hover
         `
       );
@@ -693,7 +747,13 @@
   new FontLoader().load('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/fonts/helvetiker_bold.typeface.json', (font)=>{
     STAGES.forEach((s,i)=>{
       const plate=plates[i];
-      const titleMat=frostGlass(makeTextMatcap(), s.color);   // misma técnica de vidrio, matcap fijo (contraste)
+      // BUG DE RAÍZ real encontrado con captura de Chrome (auditoría /taste): este material usa
+      // frostGlass (necesita tBackdrop) pero NUNCA se agregaba a plateMaterials → tBackdrop
+      // quedaba null para siempre → "behind" muestreaba negro → outgoingLight=mix(negro,matcap,0.28)
+      // aplastaba el matcap brillante a un 28% — ESA es la razón real del texto apagado/sin
+      // contraste, más que la elección de color. Fix: empujarlo al array (mismo que las placas).
+      const titleMat=frostGlass(makeTextMatcap(), s.color, {matcapWeight:0.78, neonStrength:0.3});
+      plateMaterials.push(titleMat);
       const lineHeight=0.62, size=0.42, totalH=(s.lines.length-1)*lineHeight;
       s.lines.forEach((line,li)=>{
         // OJO (bug real): la propiedad de profundidad de TextGeometry se llama "height", NO
@@ -715,7 +775,8 @@
     // protagonista de la placa apaisada. Misma técnica (hijo 3D + matcap propio + clamp de ancho).
     CASES.forEach((c,i)=>{
       const plate=casePlates[i];
-      const hookMat=frostGlass(makeTextMatcap(), c.color);
+      const hookMat=frostGlass(makeTextMatcap(), c.color, {matcapWeight:0.78, neonStrength:0.3});   // mismo bug/fix que titleMat arriba
+      plateMaterials.push(hookMat);
       const geo=new TextGeometry(c.hook,{font,size:0.62,height:0.16,curveSegments:6,
         bevelEnabled:true,bevelThickness:0.024,bevelSize:0.016,bevelSegments:3});
       geo.computeBoundingBox();
@@ -732,7 +793,12 @@
     // un vidrio) — mismo matcap de contraste, tamaño moderado (son 4 a la vez, no 1 protagonista).
     CLOUD_STATS.forEach((s,i)=>{
       const group=cloudGroups[i];
-      const hookMat=frostGlass(makeTextMatcap(), s.color);
+      // BUG real encontrado con captura: este material usa frostGlass (necesita tBackdrop), pero
+      // nunca se agregaba a plateMaterials → tBackdrop quedaba null para siempre → texto negro/
+      // invisible (nunca se vio en ningún screenshot). Fix: empujarlo al mismo array que actualiza
+      // renderBackdrop() cada frame, igual que las placas de Method/Work.
+      const hookMat=frostGlass(makeTextMatcap(), s.color, {matcapWeight:0.78, neonStrength:0.3});
+      plateMaterials.push(hookMat);
       const geo=new TextGeometry(s.hook,{font,size:0.46,height:0.13,curveSegments:6,
         bevelEnabled:true,bevelThickness:0.02,bevelSize:0.014,bevelSegments:3});
       geo.computeBoundingBox();
@@ -743,6 +809,15 @@
       if(w>maxW) mesh.scale.setScalar(maxW/w);
       group.add(mesh);
     });
+    // BUG de herramienta de verificación encontrado hoy: en modo ?shot, el loop síncrono de
+    // frames corre INMEDIATAMENTE (misma tarea), mucho antes de que este callback de fuente
+    // (carga de red async) llegue a ejecutarse — el texto 3D se agregaba a la escena DESPUÉS de
+    // la última composer.render(), así que nunca aparecía en los screenshots de verificación
+    // (?shot no arranca el loop rAF, nada vuelve a dibujar). Re-renderizar una vez acá si SHOT.
+    if(SHOT){
+      camera.lookAt(camLook); dockCloudCopies(); dockStageCopies(); dockCaseCopies();
+      renderBackdrop(); composer.render();
+    }
   }, undefined, (err)=>console.warn('[amir] no se pudo cargar la fuente para los títulos 3D:',err));
 
   // ---- Backdrop compartido: 1 render extra por frame (sin las placas) que TODAS samplean ----
@@ -859,7 +934,13 @@
   // ---- Docking: el texto se ancla cada frame al borde proyectado de SU placa 3D ----
   // (texto + placa = una sola pieza; reemplaza el IntersectionObserver, que solo prendía/apagaba
   // opacidad sin relación real con dónde estaba la placa en pantalla).
-  const stageCopyEls=[...document.querySelectorAll('.stage-copy')];
+  // BUG DE RAÍZ real encontrado con captura de Chrome: '.stage-copy' es la clase BASE compartida
+  // (también la llevan .cloud-copy y .case-copy, para heredar el mismo estilo) — querySelectorAll
+  // devolvía LOS 13 elementos mezclados, y dockStageCopies() indexaba stageCopyEls[0..2] pensando
+  // que eran los 3 captions de Method: en realidad eran los primeros 3 DIVs de .cloud-copy. Por
+  // eso el caption de un número de la nube aparecía posicionado/visible como si fuera de Method.
+  // Fix: clase propia '.method-copy' solo en los 3 captions reales de Method.
+  const stageCopyEls=[...document.querySelectorAll('.method-copy')];
   const _projV=new THREE.Vector3();
   function projectPoint(x,y,z){
     _projV.set(x,y,z).project(camera);
@@ -877,6 +958,7 @@
   const stageProximity=new Array(STAGES.length).fill(0);
   const STAGE_HALFW=3.1/2*0.8;   // 80% del medio-ancho de la placa: margen interno de aire
   function dockStageCopies(){
+    const gate=sectionGate(camLook.y, CLOUD_BOTTOM_Y, METHOD_BOTTOM_Y, GATE_FEATHER);
     for(let i=0;i<STAGES.length;i++){
       const s=STAGES[i], el=stageCopyEls[i]; if(!el) continue;
       // el TÍTULO 3D vive en la mitad superior del vidrio; el caption se ancla DEBAJO del título
@@ -888,7 +970,7 @@
       const tx=c.x-availW/2, ty=c.y;
       el.style.transform=`translate3d(${Math.round(tx)}px,${Math.round(ty)}px,0)`;
       const dist=Math.abs(camLook.y-s.y);
-      const op=Math.max(0,Math.min(1,1-dist/5));
+      const op=Math.max(0,Math.min(1,1-dist/5))*gate;   // gate: nunca visible fuera de Method (fix bleed)
       el.style.opacity=op; el.classList.toggle('active',op>0.55);
       stageProximity[i]=op;
     }
@@ -900,6 +982,7 @@
   const CASE_HALFW=(PAIR_SIDE?2.6:4.2)/2*0.82;
   const CASE_ANCHOR_Y=-3.0/2*0.2;   // ~20% del medio-alto hacia abajo del centro — deja lugar real debajo con margen
   function dockCaseCopies(){
+    const gate=sectionGate(camLook.y, METHOD_BOTTOM_Y, CASES.at(-1).y-100, GATE_FEATHER);
     for(let i=0;i<CASES.length;i++){
       const c=CASES[i], el=caseCopyEls[i]; if(!el) continue;
       const availW=projectedWidth(c.x,c.y,CASE_HALFW);
@@ -907,7 +990,7 @@
       el.style.width=Math.round(availW)+'px';
       el.style.transform=`translate3d(${Math.round(p.x-availW/2)}px,${Math.round(p.y)}px,0)`;
       const dist=Math.abs(camLook.y-c.y);
-      const op=Math.max(0,Math.min(1,1-dist/5));
+      const op=Math.max(0,Math.min(1,1-dist/5))*gate;   // gate: nunca visible fuera de Work (fix bleed)
       el.style.opacity=op; el.classList.toggle('active',op>0.55);
       caseProximity[i]=op;
     }
@@ -916,13 +999,14 @@
   // de CADA número (no de un centro compartido) para que cada caption siga a su propio cristal.
   const cloudCopyEls=[...document.querySelectorAll('.cloud-copy')];
   function dockCloudCopies(){
+    const gate=sectionGate(camLook.y, CLOUD_TOP_Y, CLOUD_BOTTOM_Y, GATE_FEATHER);
     for(let i=0;i<CLOUD_STATS.length;i++){
       const s=CLOUD_STATS[i], el=cloudCopyEls[i]; if(!el) continue;
       const p=projectPoint(s.x, s.y-0.55, 0);
       const w=el.offsetWidth;
       el.style.transform=`translate3d(${Math.round(p.x-w/2)}px,${Math.round(p.y)}px,0)`;
       const dist=Math.abs(camLook.y-s.y);
-      const op=Math.max(0,Math.min(1,1-dist/5));
+      const op=Math.max(0,Math.min(1,1-dist/5))*gate;   // gate: nunca visible fuera de Signal (fix bleed)
       el.style.opacity=op; el.classList.toggle('active',op>0.55);
     }
   }
