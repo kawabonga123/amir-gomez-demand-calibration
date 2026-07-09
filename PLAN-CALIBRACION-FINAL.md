@@ -90,8 +90,8 @@
 
 ## ORDEN DE EJECUCIÓN (cada fase = editar → verificar local desktop+mobile → commit → deploy → verificar vivo)
 
-- **Fase 1 — P0-B (títulos sólidos)**: es el fix más chico con el mayor impacto de legibilidad y simplifica la Fase 2 (menos materiales especiales que animar).
-- **Fase 2 — P0-A (focus por proximidad)**: el fix estructural. Hacerlo con calma: primero placas de Method, verificar; después Work; después Signal.
+- **Fase 1 — P0-B (títulos sólidos)**: ✅ **HECHA (Fable, 2026-07-09, commit 07b98c7, deployada)**. Títulos/hooks/números en `MeshBasicMaterial` crema sólido; `makeTextMatcap()` eliminado. Verificada numérica + captura.
+- **Fase 2 — P0-A (focus por proximidad)**: ✅ **HECHA (mismo commit)**. `registerFadeGroups()`+`applyFocusFade()` (curva prox², piso 0.08, diales con rango /8); materiales de texto clonados por bloque; hover escalado por proximidad. Verificada: foco 0.6/1.0 vs vecinas 0.048/0.08 en los 3 grupos + captura (una sola placa protagonista). **Pendiente de esta fase**: validación visual del efecto recorriendo el sitio con scroll real en una pantalla normal (las herramientas de captura estaban degradadas — ver gotcha 2) y ajuste fino de FOCUS_FLOOR/curva si Agus quiere más o menos presencia fantasmal.
 - **Fase 3 — P0-C (hero)**.
 - **Fase 4 — P1-D (ritmo unificado de placas)** y **P1-E (captions de diales)**.
 - **Fase 5 — P1-F (nav)** solo si tras la Fase 2 sigue molestando.
