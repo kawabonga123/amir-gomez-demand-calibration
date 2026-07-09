@@ -21,7 +21,7 @@
     --bg:#050608; --fg:#f2efe9; --muted:#7d8a86;
     --brand:#ff6a2b; --brand-deck:#d8551e; --chaos:#8a8078;
     /* cian: acento ESCASO (feedback de Agus) — solo en CTAs y hover de nav, no reemplaza al
-       naranja como color de marca. El texto 3D (títulos/hooks) ya lo usa vía makeTextMatcap. */
+       naranja como color de marca. (El texto 3D ya NO lo usa: pasó a sólido crema, P0-B.) */
     --cyan:#4dffd0;
   }
   *{margin:0;padding:0;box-sizing:border-box}
@@ -854,19 +854,9 @@
 
   // ---- Título VOLUMÉTRICO 3D, hijo de la placa: hereda posición/rotación automáticamente
   // (arregla de raíz que "el texto no acompaña a la placa" — al ser hijo, es LA MISMA pieza).
-  // BUG DE CONTRASTE encontrado por Agus (con captura): el matcap del texto se generaba a partir
-  // del MISMO color de la placa (solo más claro) → título y vidrio quedaban del mismo tono, se
-  // fundían, ilegible. Fix: matcap de texto FIJO cian-blanco (siempre contrasta contra el vidrio
-  // cálido, sea cual sea su color de etapa) — el color de etapa sigue vivo vía uNeon (rim al hover).
-  // De paso reintroduce el cian como acento — pedido explícito, "aquí y allá, no en todos lados".
-  function makeTextMatcap(){
-    const c=document.createElement('canvas'); c.width=c.height=128; const x=c.getContext('2d');
-    const g=x.createRadialGradient(48,42,4,64,64,80);
-    g.addColorStop(0,'#f2feff'); g.addColorStop(0.45,'#7fe8e0');
-    g.addColorStop(0.8,'#1c4a48'); g.addColorStop(1,'#05070a');
-    x.fillStyle=g; x.fillRect(0,0,128,128);
-    const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; return t;
-  }
+  // NOTA histórica: acá vivía makeTextMatcap() (matcap cian-blanco para títulos/hooks). Se
+  // eliminó en la auditoría 2026-07-09 (P0-B): un matcap es dependiente del ángulo por diseño y
+  // los títulos se veían gris-fantasma según el momento — todo el texto pasó a material sólido.
   // BUG DE RAÍZ real, señalado por Agus varias veces ("este texto no va aparte de la placa, es
   // parte de la placa"): el caption (párrafo) vivía en DOM, position:fixed, dockeado por
   // proyección de cámara cada frame — por más panel/fondo que se le pusiera, seguía siendo una
@@ -875,8 +865,12 @@
   // MISMA placa que el título — una sola pieza de verdad, sin docking, sin DOM, sin poder
   // desincronizarse jamás. Material SÓLIDO (MeshBasicMaterial, sin frostGlass/backdrop, sin
   // transparencia) — no compite con el vidrio, no se lava en hover: máximo contraste garantizado.
-  const bodyTextMat=new THREE.MeshBasicMaterial({color:0xf2efe9, toneMapped:false});
-  const eyebrowTextMat=new THREE.MeshBasicMaterial({color:0xff6a2b, toneMapped:false});
+  // transparent:true por el focus por proximidad (P0-A): las placas no enfocadas se atenúan, y
+  // eso incluye sus textos. OJO: estos 2 materiales son BASE — addTextLines los CLONA por bloque
+  // de texto (ver ahí), porque animar la opacidad de un material compartido entre todas las
+  // placas atenuaría todas a la vez (el fade es POR PLACA).
+  const bodyTextMat=new THREE.MeshBasicMaterial({color:0xf2efe9, toneMapped:false, transparent:true});
+  const eyebrowTextMat=new THREE.MeshBasicMaterial({color:0xff6a2b, toneMapped:false, transparent:true});
   new FontLoader().load('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/fonts/helvetiker_bold.typeface.json', (font)=>{
   // Wrap de texto REAL (no a ojo por cantidad de caracteres): arma cada línea agregando palabras
   // hasta que la geometría medida (bounding box) se pasa del ancho disponible, recién ahí corta.
@@ -933,32 +927,21 @@
     });
     const merged=mergeGeometries(geos,false);
     geos.forEach(g=>g.dispose());
-    parent.add(new THREE.Mesh(merged,mat));
+    // .clone(): cada bloque de texto necesita SU material (no el compartido) para que el focus
+    // por proximidad (P0-A) pueda atenuar cada placa de forma independiente.
+    parent.add(new THREE.Mesh(merged,mat.clone()));
   }
   STAGES.forEach((s,i)=>{
       const plate=plates[i];
-      // BUG DE RAÍZ real encontrado con captura de Chrome (auditoría /taste): este material usa
-      // frostGlass (necesita tBackdrop) pero NUNCA se agregaba a plateMaterials → tBackdrop
-      // quedaba null para siempre → "behind" muestreaba negro → outgoingLight=mix(negro,matcap,0.28)
-      // aplastaba el matcap brillante a un 28% — ESA es la razón real del texto apagado/sin
-      // contraste, más que la elección de color. Fix: empujarlo al array (mismo que las placas).
-      // REGLA DURA de Agus (mayúsculas): el texto de las placas debe verse legible SIEMPRE, sin
-      // excepción — nunca puede depender de cuánto brille lo que hay detrás del vidrio en ese
-      // momento. matcapWeight (antes 0.78) todavía dejaba un 22% de "behind" filtrarse en el
-      // color final — ese 22% es EXACTAMENTE lo que se volvió impredecible la vez que subimos el
-      // brillo de las partículas (mismo bug, otra vuelta). Subido a 0.97: el shading de vidrio +
-      // el rim cálido (fresnel, no depende del fondo) siguen exactamente igual — solo se cierra el
-      // único canal que dependía de algo variable, dejando el texto inmune para siempre a futuros
-      // ajustes de brillo/bloom/hover.
-      const titleMat=frostGlass(makeTextMatcap(), s.color, {matcapWeight:0.97, neonStrength:0.3});
-      plateMaterials.push(titleMat);
-      // BUG real señalado por Agus: "cuando apunto a la placa, no se lee bien — necesita
-      // contraste, no solo brillo". Causa: frostGlass deja opacity:0.6 de base (pensado para
-      // vidrio, no para texto) — al hover la PLACA detrás se vuelve más opaca/neón (uHover sube
-      // diffuseColor.a a 0.92 y el rim), y esa placa más brillante se filtra a través del texto
-      // semi-transparente (60% opaco) y lo "lava". Fix: el texto casi opaco siempre — así lo que
-      // cambia con el hover es el vidrio de ATRÁS, no el texto que hay que leer.
-      titleMat.opacity=0.96;
+      // REGLA DURA de Agus (auditoría 2026-07-09, P0-B): TODO texto debe leerse SIEMPRE, y el
+      // matcap (aunque con matcapWeight 0.97) seguía siendo un material dependiente del ÁNGULO —
+      // el título se veía gris-fantasma según el momento, mientras el CUERPO (MeshBasicMaterial
+      // sólido) se leía perfecto en todas las capturas. Fix de raíz: el título usa EXACTAMENTE el
+      // mismo enfoque que el cuerpo — material sólido, sin matcap, sin fresnel, sin backdrop.
+      // La dimensionalidad la da la GEOMETRÍA (extrusión + bevel), no el material.
+      // transparent:true no es estético: lo necesita el focus por proximidad (P0-A, ver
+      // applyFocusFade) para poder atenuar las placas no enfocadas.
+      const titleMat=new THREE.MeshBasicMaterial({color:0xf2efe9, toneMapped:false, transparent:true});
       // Título achicado (pedido de Agus: "achica el título de la placa") — de protagonista único
       // pasa a jerarquía (título+eyebrow+cuerpo, los 3 EN la placa) — libera alto real para el
       // caption, que ahora es geometría 3D hija de la MISMA placa, no DOM aparte.
@@ -993,9 +976,7 @@
     // los 3 geometría 3D hija de la MISMA placa apaisada — mismo criterio que Method arriba).
     CASES.forEach((c,i)=>{
       const plate=casePlates[i];
-      const hookMat=frostGlass(makeTextMatcap(), c.color, {matcapWeight:0.97, neonStrength:0.3});   // mismo bug/fix que titleMat arriba
-      plateMaterials.push(hookMat);
-      hookMat.opacity=0.96;   // mismo fix de contraste en hover que titleMat (ver arriba)
+      const hookMat=new THREE.MeshBasicMaterial({color:0xf2efe9, toneMapped:false, transparent:true});   // sólido, mismo criterio/razón que titleMat arriba
       const geo=new TextGeometry(c.hook,{font,size:0.46,height:0.13,curveSegments:14,
         bevelEnabled:true,bevelThickness:0.018,bevelSize:0.012,bevelSegments:3});
       geo.computeBoundingBox();
@@ -1016,13 +997,7 @@
     // radio interno del dial (DIAL_R=0.85 menos el grosor del tubo).
     CLOUD_STATS.forEach((s,i)=>{
       const group=cloudGroups[i];
-      // BUG real encontrado con captura: este material usa frostGlass (necesita tBackdrop), pero
-      // nunca se agregaba a plateMaterials → tBackdrop quedaba null para siempre → texto negro/
-      // invisible (nunca se vio en ningún screenshot). Fix: empujarlo al mismo array que actualiza
-      // renderBackdrop() cada frame, igual que las placas de Method/Work.
-      const hookMat=frostGlass(makeTextMatcap(), s.color, {matcapWeight:0.97, neonStrength:0.3});
-      plateMaterials.push(hookMat);
-      hookMat.opacity=0.96;   // mismo fix de contraste que titleMat (consistencia, aunque el dial no tiene hover)
+      const hookMat=new THREE.MeshBasicMaterial({color:0xf2efe9, toneMapped:false, transparent:true});   // sólido, mismo criterio/razón que titleMat arriba
       const geo=new TextGeometry(s.hook,{font,size:0.38,height:0.12,curveSegments:14,
         bevelEnabled:true,bevelThickness:0.018,bevelSize:0.012,bevelSegments:3});
       geo.computeBoundingBox();
@@ -1041,12 +1016,18 @@
       const bodyLines=wrapText(s.caption, 0.095, 2.0);
       addTextLines(group, bodyTextMat, bodyLines, 0.095, 0.13, -1.32, 2.0, 0.05);
     });
+    // Registro del focus por proximidad (P0-A): recién ACÁ existen todos los hijos (vidrio +
+    // título + eyebrow + cuerpo) de cada placa/dial — registrar antes dejaría textos sin fade.
+    // Si la fuente no carga (callback de error), no hay textos NI registro: todo queda al 100%
+    // de opacidad, comportamiento anterior — degradación sin roturas.
+    registerFadeGroups(plates); registerFadeGroups(casePlates); registerFadeGroups(cloudGroups);
     // BUG de herramienta de verificación encontrado hoy: en modo ?shot, el loop síncrono de
     // frames corre INMEDIATAMENTE (misma tarea), mucho antes de que este callback de fuente
     // (carga de red async) llegue a ejecutarse — el texto 3D se agregaba a la escena DESPUÉS de
     // la última composer.render(), así que nunca aparecía en los screenshots de verificación
     // (?shot no arranca el loop rAF, nada vuelve a dibujar). Re-renderizar una vez acá si SHOT.
     if(SHOT){
+      updateProximity(); applyFocusFade();
       camera.lookAt(camLook); renderBackdrop(); composer.render();
     }
   }, undefined, (err)=>console.warn('[amir] no se pudo cargar la fuente para los títulos 3D:',err));
@@ -1238,9 +1219,42 @@
   // distancia cámara↔placa, sin proyección ni manipulación de elementos.
   const stageProximity=new Array(STAGES.length).fill(0);
   const caseProximity=new Array(CASES.length).fill(0);
+  const cloudProximity=new Array(CLOUD_STATS.length).fill(0);
   function updateProximity(){
     for(let i=0;i<STAGES.length;i++) stageProximity[i]=Math.max(0,Math.min(1,1-Math.abs(camLook.y-STAGES[i].y)/5));
     for(let i=0;i<CASES.length;i++) caseProximity[i]=Math.max(0,Math.min(1,1-Math.abs(camLook.y-CASES[i].y)/5));
+    // rango más ancho (/8) para los diales: son una CONSTELACIÓN (se diseñaron para verse juntos)
+    // — con /5 los diales lejanos del cluster se apagaban demasiado mientras el usuario todavía
+    // está recorriendo la propia nube. /8 los mantiene presentes dentro de Signal y aun así los
+    // apaga bien cuando la cámara ya está en Method (distancia 4-7 unidades → 0.5-0.13 de prox).
+    for(let i=0;i<CLOUD_STATS.length;i++) cloudProximity[i]=Math.max(0,Math.min(1,1-Math.abs(camLook.y-CLOUD_STATS[i].y)/8));
+  }
+  // ---- Focus por proximidad (P0-A de la auditoría 2026-07-09, la queja MÁS repetida de Agus:
+  // "se sobreponen las placas", "no se llega a leer") ----
+  // Causa raíz del "túnel": la cámara mira a lo largo del eje y SIEMPRE hay 4-6 objetos en el
+  // frustum, todos al 100% de opacidad — los textos de las placas vecinas se mezclan con la
+  // actual. Fix: cada placa/dial (vidrio + textos hijos, TODOS) toma opacidad según su proximidad
+  // al look-target de cámara: la enfocada al 100%, las vecinas como presencia fantasmal que no
+  // compite. Curva prox² para que el apagado sea agresivo apenas deja de ser la protagonista.
+  // Los materiales se registran UNA vez (tras crear el texto, ver font callback) con su opacidad
+  // BASE — cada frame se setea base*factor (no se acumula nada).
+  const FOCUS_FLOOR=0.08;
+  function registerFadeGroups(list){
+    list.forEach(root=>{
+      const mats=[];
+      root.traverse(o=>{ if(o.material){ o.material.transparent=true; mats.push({m:o.material, base:o.material.opacity}); } });
+      root.userData.fadeMats=mats;
+    });
+  }
+  function applyFocusFade(){
+    const fade=(root,prox)=>{
+      const mats=root.userData.fadeMats; if(!mats) return;
+      const f=FOCUS_FLOOR+(1-FOCUS_FLOOR)*prox*prox;
+      for(const e of mats) e.m.opacity=e.base*f;
+    };
+    plates.forEach((p,i)=>fade(p,stageProximity[i]));
+    casePlates.forEach((p,i)=>fade(p,caseProximity[i]));
+    cloudGroups.forEach((g,i)=>fade(g,cloudProximity[i]));
   }
 
   const clock=new THREE.Clock(); let frames=0;
@@ -1283,15 +1297,19 @@
     // los diales de PROOF giran lentamente (pedido de Agus) — solo el sub-group ring+ticks+aguja,
     // el número queda quieto y derecho (ver comentario en cloudGroups).
     cloudGroups.forEach(g=>{ g.userData.spin.rotation.z=t*g.userData.spinSpeed; });
-    updateProximity();   // solo para el glow neón en touch — el caption ya no depende de esto
+    updateProximity();
+    applyFocusFade();   // P0-A: una sola placa protagonista por vez, las vecinas casi apagadas
     // hover neón: en mouse, la placa apuntada se enciende a full. En touch no hay mousemove
     // (nunca se dispara), así que la reemplazamos por un glow suave y automático basado en
     // proximidad de scroll — la placa que está "al frente" en ese momento se ilumina sola.
+    // El hover en desktop también se escala por proximidad: sin esto, apuntar al costado de la
+    // placa protagonista puede raycastear una placa LEJANA (visualmente detrás) y encenderla a
+    // full — rompiendo el focus por proximidad que acabamos de aplicar.
     plates.forEach((p,i)=>{
-      const target=TOUCH ? stageProximity[i]*0.55 : ((p===hoveredPlate)?1:0);
+      const target=TOUCH ? stageProximity[i]*0.55 : ((p===hoveredPlate)?stageProximity[i]:0);
       p.material.userData.uHover.value+=(target-p.material.userData.uHover.value)*0.15; });
     casePlates.forEach((p,i)=>{
-      const target=TOUCH ? caseProximity[i]*0.55 : ((p===hoveredPlate)?1:0);
+      const target=TOUCH ? caseProximity[i]*0.55 : ((p===hoveredPlate)?caseProximity[i]:0);
       p.material.userData.uHover.value+=(target-p.material.userData.uHover.value)*0.15; });
     renderBackdrop();   // 1 render extra (sin placas) que todas samplean para la refracción
     composer.render();
