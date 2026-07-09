@@ -1107,6 +1107,25 @@
   const workEl=document.getElementById('work');
   const teamEl=document.getElementById('team');
   const scrollCueEl=document.querySelector('.scroll-cue');
+  // BUG real medido (P0-C, auditoría 2026-07-09): `.scroll-cue` es `position:fixed;bottom:1.6rem`
+  // — no reserva espacio ni sabe nada del contenido real del Hero. En viewports de altura
+  // "normal de notebook" (~780-800px), medido con getBoundingClientRect: el gap real entre el
+  // fondo del CTA y el techo del cue baja a ~12px — no llega a superponerse HOY, pero es un
+  // margen tan chico que cualquier variación de fuente/línea (carga de webfont, texto más largo)
+  // lo cruza. En vez de una constante mágica de viewport, medir la colisión REAL cada vez que el
+  // layout puede cambiar (carga, resize, fuente) y ocultar el cue si el margen es incómodo.
+  const CUE_MIN_GAP=24;   // px de aire mínimo que debe quedar entre el CTA y el cue
+  let cueBlockedByLayout=false;
+  function checkHeroCueCollision(){
+    const cta=document.querySelector('.cta');
+    if(!cta||!scrollCueEl) return;
+    const gap=scrollCueEl.getBoundingClientRect().top - cta.getBoundingClientRect().bottom;
+    cueBlockedByLayout = gap < CUE_MIN_GAP;
+  }
+  checkHeroCueCollision();
+  addEventListener('resize', checkHeroCueCollision);
+  // el font-loader (más abajo) puede correr la métrica del H1/CTA al cargar la webfont — re-chequear ahí también.
+  document.fonts && document.fonts.ready && document.fonts.ready.then(checkHeroCueCollision);
   // NOTA: acá antes vivían isBeyondJourney()/tailFade() — gates para forzar a 0 la opacidad de
   // captions DOM que podían quedar "pegados" sobre Team/Contact tras un salto de scroll rápido.
   // Ya no existen: sin DOM dockeado no hay nada que pueda quedar pegado — el caption es parte
@@ -1131,7 +1150,17 @@
   // (y=0→CLOUD_Y_START) y el 75% restante a atravesar el cluster real de diales — así los 4
   // números quedan en pantalla la mayor parte del scroll de esa sección, no comprimidos al final.
   const CLOUD_APPROACH_FRAC=0.25;
-  let progress=0, camTargetY=0.8, camTargetZ=9, camLookTargetY=0;
+  // BUG real medido (P0-C, auditoría 2026-07-09): en mobile portrait (375×812, aspectZScale llega
+  // a 2.3x → cámara MUY lejos → frustum vertical enorme, ±8.79 unidades), el frustum del Hero
+  // estático llegaba hasta y=-7.99 — el dial más superficial de Signal (y=-7.8) quedaba DENTRO
+  // del cuadro, asomando antes de que el usuario scrollee. Confirmado numérico: con camY=0.8,
+  // frustumBottom=camY-halfH=-7.99 > -7.8 es FALSO (el dial está por encima del piso del
+  // frustum → visible). Subir el ancla inicial de la cámara a 1.6 empuja frustumBottom a -7.19,
+  // dejando 0.6 unidades de margen. Es SOLO el ancla de PARTIDA del lerp de todo el viaje —
+  // el otro extremo (lastPlateY-3, a ~40 unidades) no cambia, así que el efecto decae a ~0 mucho
+  // antes de llegar a Method (perturbación de <2% del recorrido total en progress~0.05).
+  const HERO_CAM_Y=1.6;
+  let progress=0, camTargetY=HERO_CAM_Y, camTargetZ=9, camLookTargetY=0;
   function updateFromScroll(){
     // uOrder: el caos se calibra durante el Hero (para cuando aparece la nube de señal, la
     // demanda ya está "ordenada" — refuerza el mensaje, no es solo decorativo).
@@ -1143,7 +1172,7 @@
     const journeyBottom=workEl.offsetTop+workEl.offsetHeight;
     const journeyScrollable=Math.max(1, journeyBottom-innerHeight-journeyTop);
     progress=Math.max(0,Math.min(1,(scrollY-journeyTop)/journeyScrollable));
-    camTargetY=lerp(0.8, lastPlateY-3, progress);
+    camTargetY=lerp(HERO_CAM_Y, lastPlateY-3, progress);
     // Z NO puede cerrar linealmente a lo largo de TODO el viaje (Cloud+Method+Work): con la nube
     // temprano en un journey largo, progress todavía es chico ahí y la cámara quedaba lejísimos
     // (Z≈20 en mobile, verificado — la nube se veía perdida/chica, todo lo contrario del pedido
@@ -1164,7 +1193,7 @@
       const p=Math.max(0,Math.min(1,(scrollY-workTop)/Math.max(1,journeyBottom-workTop)));
       camLookTargetY=lerp(METHOD_Y_END, lastPlateY, p);
     }
-    if(scrollCueEl) scrollCueEl.style.opacity=scrollY>heroEl.offsetHeight*0.35?0:1;
+    if(scrollCueEl) scrollCueEl.style.opacity=(scrollY>heroEl.offsetHeight*0.35||cueBlockedByLayout)?0:1;
     // BUG real señalado por Agus con captura desktop ("esta parte no se llega a ver bien"): el
     // canvas 3D es `position:fixed` (ver CSS #gl) y renderiza SIEMPRE, sin importar el scroll —
     // nunca se apagaba al pasar de Work a Team. Resultado: el "túnel" de placas recedientes (varias
@@ -1270,7 +1299,7 @@
       // shot verifica lo mismo que el usuario ve al scrollear hasta esa etapa/caso/número.
       const pAt=s.y/lastPlateY;
       const zAt=Math.min(1,pAt*14);   // misma saturación rápida de Z que updateFromScroll()
-      camera.position.set(0, lerp(0.8,lastPlateY-3,pAt), lerp(9,5.2,zAt)*aspectZScale());
+      camera.position.set(0, lerp(HERO_CAM_Y,lastPlateY-3,pAt), lerp(9,5.2,zAt)*aspectZScale());
       camLook.set(0, s.y, 0);
       uniforms.uOrder.value=1;
       if(params.has('hover')){   // ?shot&stage=N&hover / ?shot&case=N&hover → verificar neón
