@@ -140,7 +140,12 @@
   .team{padding:5rem 6vw 4rem;position:relative;z-index:4;
     background:linear-gradient(to bottom, transparent 0, var(--bg) 9rem, var(--bg) 100%)}
   .team-eyebrow{display:block;margin-bottom:1.8rem}
-  .team-grid{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:2rem;max-width:1100px}
+  /* BUG real señalado por Agus con captura: "por alguna razón Amir sale más grande" — la columna
+     de Amir tenía 1.3fr (a propósito, en la ronda de F5 se pensó como "protagonista"), pero con
+     las 3 fotos ahora cuadradas de verdad (fix de aspect-ratio arriba) esa columna más ancha se
+     traduce directo en una foto visiblemente más grande que sus compañeras — dos vueltas de
+     feedback marcando esto como error, no como jerarquía deseada. 3 columnas iguales. */
+  .team-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:2rem;max-width:1100px}
   /* BUG DE RAÍZ real (Agus, captura): las 3 fotos de Team se veían "raras"/gigantes — con la
      etiqueta <img width="640" height="640"> del HTML, el navegador usa ese height="640" como
      ALTO FIJO real del box, IGNORANDO por completo aspect-ratio:1/1 (que sin height:auto
@@ -911,9 +916,14 @@
   // fusionar todas las líneas de un caption en UNA sola BufferGeometry — 1 draw call por caption,
   // sin importar cuántas líneas tenga. `bevelEnabled:false` (ver wrapText) también reduce
   // triángulos por letra ~4-5x.
+  // BUG real señalado por Agus con captura (zoom cercano a un caption de Work): las letras se
+  // seguían viendo "ilegibles"/facetadas — 4 segments por curva alcanzaba para performance pero
+  // no para nitidez de cerca. Subido a 8 (el doble): con `bevelEnabled:false` + geometría
+  // fusionada (1 draw call por caption, ver arriba) el costo extra de triángulos sigue siendo
+  // chico — no es el mismo problema que el bevel de antes (eso SÍ cuadriplicaba triángulos).
   function addTextLines(parent,mat,lines,size,lineHeight,topY,maxW,z){
     const geos=lines.map((line,li)=>{
-      const geo=new TextGeometry(line,{font,size,height:0.01,curveSegments:4,bevelEnabled:false});
+      const geo=new TextGeometry(line,{font,size,height:0.01,curveSegments:8,bevelEnabled:false});
       geo.computeBoundingBox();
       const w=geo.boundingBox.max.x-geo.boundingBox.min.x;
       geo.translate(-w/2,0,0);                                    // centrado horizontal, ANTES de escalar
@@ -1114,6 +1124,7 @@
   const heroEl=document.querySelector('.hero');
   const methodEl=document.getElementById('method');
   const workEl=document.getElementById('work');
+  const teamEl=document.getElementById('team');
   const scrollCueEl=document.querySelector('.scroll-cue');
   // NOTA: acá antes vivían isBeyondJourney()/tailFade() — gates para forzar a 0 la opacidad de
   // captions DOM que podían quedar "pegados" sobre Team/Contact tras un salto de scroll rápido.
@@ -1186,6 +1197,14 @@
     const canvasFadeDist=innerHeight*0.55;
     const canvasFadeP=Math.max(0,Math.min(1,(scrollY-canvasFadeStart)/canvasFadeDist));
     canvas.style.opacity=String(1-canvasFadeP);
+    // BUG real señalado por Agus con captura ("un corte en esta parte"): el fundido de arriba
+    // apaga el canvas, pero Team (contenido DOM normal) aparece a opacidad PLENA en cuanto su
+    // borde superior entra al viewport — eso pasa ANTES de que el canvas termine de apagarse,
+    // así que por un tramo se ven las DOS capas superpuestas (placas fantasma semi-transparentes
+    // detrás de fotos/texto ya nítidos) — un "corte"/glitch, no una transición limpia. Fix:
+    // Team hace un fundido de ENTRADA con la MISMA curva (mismo tramo de scroll) — cuando el
+    // canvas está en 0, Team ya está en 1; nunca coinciden "una capa nítida sobre otra fantasma".
+    if(teamEl) teamEl.style.opacity=String(canvasFadeP);
   }
   addEventListener('scroll',updateFromScroll,{passive:true});
 
