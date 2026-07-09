@@ -141,7 +141,16 @@
     background:linear-gradient(to bottom, transparent 0, var(--bg) 9rem, var(--bg) 100%)}
   .team-eyebrow{display:block;margin-bottom:1.8rem}
   .team-grid{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:2rem;max-width:1100px}
-  .member img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:14px;display:block}
+  /* BUG DE RAÍZ real (Agus, captura): las 3 fotos de Team se veían "raras"/gigantes — con la
+     etiqueta <img width="640" height="640"> del HTML, el navegador usa ese height="640" como
+     ALTO FIJO real del box, IGNORANDO por completo aspect-ratio:1/1 (que sin height:auto
+     explícito solo queda como valor computado "de adorno", sin efecto — verificado en aislado:
+     sin height:auto daba 408×640, con height:auto daba 408×408). Resultado: en columnas más
+     angostas que 640px (las 3, en casi cualquier viewport) la foto quedaba estirada vertical y
+     el object-fit:cover mostraba TODO el alto del recorte (de punta a punta, sin recortar arriba/
+     abajo) — la de Amir en particular mostraba de más cielo/pelo porque su recorte tenía más aire
+     arriba que las de Maia/Pilar. Fix de una línea, corrige las 3 fotos a la vez. */
+  .member img{width:100%;height:auto;aspect-ratio:1/1;object-fit:cover;border-radius:14px;display:block}
   .member h3{margin-top:1rem;font-size:1.15rem;font-weight:700}
   .member .role{display:block;margin:.3rem 0 .7rem;color:var(--brand)}
   .member p{color:#c4ccc9;font-size:.85rem;line-height:1.5;max-width:32ch}
