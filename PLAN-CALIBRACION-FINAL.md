@@ -160,3 +160,18 @@ Se ejecutaron las skills compartidas `design-frontier-director` (visual-craft + 
 - Al cruzar el breakpoint de composición portrait/landscape se recarga la escena con la geometría correcta, evitando conservar el layout equivocado tras rotar.
 
 Pendiente honesto: prueba en teléfono físico Android de gama media y bajar el TBT sin degradar el gesto central. `/taste` no puede dar APROBAR definitivo sin esa evidencia física.
+
+## MOBILE ADAPTIVE — 2026-07-11 (CONTINUACIÓN)
+
+El perfil de Lighthouse aisló que el cuello restante no era cantidad de partículas sino una tarea única de inicialización/compilación WebGL de ~3,6 s. Reducir shaders/curvas movía poco el resultado. Se cambió la arquitectura siguiendo la doctrina Innovatron/Active Theory **adaptive, no responsive**:
+
+- Desktop conserva la escena WebGL completa, partículas, frostGlass, diales y cámara continua.
+- Mobile portrait (≤640px) y teléfono landscape táctil (alto ≤500px) no inicializan WebGL. Renderizan el mismo relato Results→Method→Work con el espejo DOM convertido en una composición editorial, una línea-señal persistente y jerarquía tipográfica mobile.
+- El recorrido mobile bajó de 10,7 a 8,3 viewports; 13 bloques narrativos quedan visibles, 0 overflow, 0 errores/warnings.
+- Lighthouse mobile final: Performance 97, Accessibility 100, Best Practices 100, SEO 100; FCP 2,0 s, LCP 2,1 s, TBT 0 ms, TTI 2,1 s.
+- Rotar entre mobile-lite y desktop/WebGL fuerza una recarga controlada para construir la arquitectura correcta, no conservar geometría incompatible.
+- Copy Method afinado: se eliminaron la tautología “Everything measurable gets measured” y el tono genérico “losers get killed”.
+
+Desktop 1440×900 se revalidó con WebGL activo, 0 overflow y consola limpia. Sigue pendiente únicamente la comprobación física en un teléfono real, condición externa que ninguna emulación puede reemplazar.
+
+Reauditoría final `/taste`: **PASS 82/100 — nivel estudio, sale**. Las tres compuertas pasan con la evidencia automatizada actual. La prueba en teléfono físico queda recomendada como validación externa adicional, no como un defecto conocido del código.
