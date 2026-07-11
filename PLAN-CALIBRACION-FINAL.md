@@ -175,3 +175,13 @@ El perfil de Lighthouse aisló que el cuello restante no era cantidad de partíc
 Desktop 1440×900 se revalidó con WebGL activo, 0 overflow y consola limpia. Sigue pendiente únicamente la comprobación física en un teléfono real, condición externa que ninguna emulación puede reemplazar.
 
 Reauditoría final `/taste`: **PASS 82/100 — nivel estudio, sale**. Las tres compuertas pasan con la evidencia automatizada actual. La prueba en teléfono físico queda recomendada como validación externa adicional, no como un defecto conocido del código.
+
+## CIERRE DE CARGA MOBILE — 2026-07-11
+
+La primera versión mobile-lite evitaba inicializar WebGL, pero los imports estáticos todavía descargaban Three.js y sus addons. Se reemplazaron por imports dinámicos dentro del branch desktop: en mobile la red carga solamente HTML + Google Fonts; Three/TextGeometry/postproceso no se descargan ni evalúan.
+
+- Lighthouse mobile final: **100 Performance / 100 Accessibility / 100 Best Practices / 100 SEO**.
+- FCP 1,2 s · LCP 1,2 s · TBT 0 ms · Speed Index 1,2 s · TTI 1,2 s.
+- Transferencia medida: 235 KiB / 9 requests en la pasada completa.
+- Desktop 1440×900 sigue cargando WebGL dinámicamente, `webgl-ready`, 0 overflow y 0 errores/warnings.
+- Work mobile separa correctamente tema y nombre de caso; Contact agrega una instrucción concreta para iniciar la conversación sin prometer entregables ni SLA inexistentes.

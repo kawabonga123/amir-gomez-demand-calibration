@@ -149,6 +149,7 @@
   html:is(.webgl-failed,.mobile-lite) .stage-copy .sr-only{position:static;width:auto;height:auto;margin:0;overflow:visible;clip:auto;white-space:normal}
   html:is(.webgl-failed,.mobile-lite) .stage-copy h2{font-size:clamp(1.65rem,8vw,2.35rem);line-height:1;margin:.65rem 0}
   html:is(.webgl-failed,.mobile-lite) .stage-copy p{color:#c4ccc9;line-height:1.55;max-width:38ch}
+  html:is(.webgl-failed,.mobile-lite) .stage-copy .case-name{display:block;margin-top:.35rem;color:var(--fg)}
   html:is(.webgl-failed,.mobile-lite) #signal,html:is(.webgl-failed,.mobile-lite) #method,
   html:is(.webgl-failed,.mobile-lite) #work{padding:4.5rem 0 1.5rem;background:var(--bg)}
   html.mobile-lite body::before{content:'';position:fixed;z-index:0;top:0;bottom:0;left:78%;width:1px;pointer-events:none;
@@ -220,6 +221,7 @@
     position:relative;z-index:4;background:var(--bg)}
   .contact-eyebrow{display:block;margin-bottom:1.6rem}
   .contact h2{font-weight:700;letter-spacing:-.03em;line-height:1.02;font-size:clamp(2.2rem,7vw,5rem);max-width:14ch}
+  .contact-intro{max-width:42ch;margin-top:1.5rem;color:#c4ccc9;font-size:clamp(1rem,1.4vw,1.15rem);line-height:1.55}
   .contact-actions{margin-top:2.6rem;display:flex;flex-direction:column;align-items:flex-start;gap:1.2rem}
   .contact-alt{color:var(--fg);text-decoration:none;border-bottom:1px solid rgba(242,239,233,.3);padding-bottom:.15rem;
     transition:color .3s var(--ease),border-color .3s var(--ease)}
@@ -400,6 +402,7 @@
     <section id="contact" class="contact" aria-label="Contact">
       <span class="mono contact-eyebrow">Ready to calibrate?</span>
       <h2>Let’s find what your growth budget should scale next.</h2>
+      <p class="contact-intro">Tell us what’s underperforming, where you want to grow, and what the numbers look like today.</p>
       <div class="contact-actions">
         <a class="cta" href="mailto:amir@amirgomez.com?subject=Growth%20audit%20request"><span>Request a growth audit</span><span class="arrow">→</span></a>
         <a class="mono contact-alt" href="https://wa.me/5493541370209" target="_blank" rel="noopener">or WhatsApp +54 9 3541 370209</a>
@@ -424,18 +427,24 @@
     "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }
   </script>
   <script type="module">
-  import * as THREE from 'three';
-  import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-  import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-  import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
-  import { SMAAPass } from 'three/addons/postprocessing/SMAAPass.js';
-  import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-  import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-  import { FontLoader } from 'three/addons/loaders/FontLoader.js';
-  import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
-  import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-
   if(!document.documentElement.classList.contains('mobile-lite')){
+  // Mobile-lite no necesita descargar ni evaluar Three. Desktop importa el motor y sus addons
+  // bajo demanda, en paralelo, solo despues de que la arquitectura ya fue elegida.
+  const [THREE,
+    {EffectComposer},{RenderPass},{UnrealBloomPass},{SMAAPass},{OutputPass},
+    {RoundedBoxGeometry},{FontLoader},{TextGeometry},{mergeGeometries}
+  ]=await Promise.all([
+    import('three'),
+    import('three/addons/postprocessing/EffectComposer.js'),
+    import('three/addons/postprocessing/RenderPass.js'),
+    import('three/addons/postprocessing/UnrealBloomPass.js'),
+    import('three/addons/postprocessing/SMAAPass.js'),
+    import('three/addons/postprocessing/OutputPass.js'),
+    import('three/addons/geometries/RoundedBoxGeometry.js'),
+    import('three/addons/loaders/FontLoader.js'),
+    import('three/addons/geometries/TextGeometry.js'),
+    import('three/addons/utils/BufferGeometryUtils.js')
+  ]);
   // Darle dos paints al HTML antes de construir la escena pesada mejora la primera impresion y
   // evita que la inicializacion WebGL bloquee el contenido principal.
   await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
