@@ -146,3 +146,17 @@ Una nueva recorrida real con Playwright encontró regresiones que la verificaci�
 - Copy genérico de Team/Contact reemplazado por lenguaje específico de adquisición, señal y próxima decisión de inversión.
 
 Evidencia local final: 0 overflow horizontal en 375×667 y 375×812; CTA/nav con targets de 44px o más; fotos Team 315×315 cargadas; Hero, Team y Contact capturados limpios; desktop 1440×900 limpio; reduced motion probado con scroll real; consola limpia.
+
+## AUDITORÍAS FRONTIER / TASTE / IMPECABLE — 2026-07-11
+
+Se ejecutaron las skills compartidas `design-frontier-director` (visual-craft + frontend + conversion), `/taste` e `impecable`. Hallazgos aplicados:
+
+- El eje de partículas competía con el texto central de Method/Work. Durante lectura activa, partículas e hilo ahora bajan 90% sin perder el concepto fuera de las placas.
+- Mobile low-tier: 5.000→2.500 partículas, DPR 1.5→1.25, bloom apagado y backdrop actualizado frame por medio. El Hero conserva el gesto; el tramo de lectura gana claridad y reduce GPU.
+- Google Fonts dejó de bloquear el primer render; se agregó preconnect a jsDelivr y geometría de texto más barata en low-tier. Lighthouse mobile: Performance 32→67, FCP 4.7→1.6 s, LCP 6.0→1.9 s, TBT 8,24→5,03 s en la última pasada; Accessibility / Best Practices / SEO = 100. El TBT sigue alto por la inicialización Three/TextGeometry, por lo que performance total queda como deuda explícita, no como gate aprobado.
+- Fallback progresivo: si módulo/WebGL/fuente 3D no quedan listos, el espejo DOM de Results/Method/Work se revela como contenido legible.
+- `prefers-reduced-motion`: cámara inmediata, partículas/diales estáticos y canvas a 10 fps; no queda congelado ni corre la coreografía completa.
+- Se agregó skip link visible al foco, `:focus-visible`, `<main>`, headings reales en Team/Services, retratos decorativos con lazy/async, metadata SEO/social y color-scheme.
+- Al cruzar el breakpoint de composición portrait/landscape se recarga la escena con la geometría correcta, evitando conservar el layout equivocado tras rotar.
+
+Pendiente honesto: prueba en teléfono físico Android de gama media y bajar el TBT sin degradar el gesto central. `/taste` no puede dar APROBAR definitivo sin esa evidencia física.

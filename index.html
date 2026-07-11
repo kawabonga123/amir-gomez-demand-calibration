@@ -4,10 +4,19 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>A+ Growth — Demand Calibration</title>
+<meta name="description" content="A+ Growth turns paid media, funnels and analytics into a measurable acquisition system built to scale what moves revenue.">
+<meta name="color-scheme" content="dark">
+<meta property="og:title" content="A+ Growth — Demand Calibration">
+<meta property="og:description" content="Calibrate demand before you scale spend. Paid media, funnels and analytics connected to one acquisition signal.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://kawabonga123.github.io/amir-gomez-demand-calibration/">
+<meta name="twitter:card" content="summary">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23050608'/%3E%3Ctext x='9' y='44' font-family='Arial,sans-serif' font-size='35' font-weight='700' fill='%23f2efe9'%3EA%3C/text%3E%3Ctext x='39' y='39' font-family='Arial,sans-serif' font-size='21' font-weight='700' fill='%23ff6a2b'%3E%2B%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap"></noscript>
 <!--
   A+ GROWTH (Amir Gómez, Growth Lead) — sitio construido con Innovatron desde el concepto.
   Concepto: la demanda entra caótica, A+ Growth la calibra en señal limpia.
@@ -19,7 +28,7 @@
 <style>
   :root{
     --ease:cubic-bezier(0.16,1,0.3,1);
-    --bg:#050608; --fg:#f2efe9; --muted:#7d8a86;
+    --bg:#050608; --surface:#111214; --fg:#f2efe9; --muted:#7d8a86;
     --brand:#ff6a2b; --brand-deck:#d8551e; --chaos:#8a8078;
     /* cian: acento ESCASO (feedback de Agus) — solo en CTAs y hover de nav, no reemplaza al
        naranja como color de marca. (El texto 3D ya NO lo usa: pasó a sólido crema, P0-B.) */
@@ -49,6 +58,10 @@
 
   .content{position:relative;z-index:3;pointer-events:none}
   .content a{pointer-events:auto}
+  .skip-link{position:fixed;z-index:1000;top:.75rem;left:.75rem;padding:.75rem 1rem;background:var(--fg);color:var(--bg);
+    transform:translateY(-160%);transition:transform .2s var(--ease);font-weight:700;text-decoration:none}
+  .skip-link:focus{transform:translateY(0)}
+  :focus-visible{outline:3px solid var(--cyan);outline-offset:4px}
   nav{position:fixed;top:0;left:0;width:100%;z-index:60;display:flex;justify-content:space-between;align-items:center;
     padding:1.6rem 6vw;padding-left:max(6vw,env(safe-area-inset-left));padding-right:max(6vw,env(safe-area-inset-right));
     mix-blend-mode:difference}
@@ -119,6 +132,12 @@
   .stage{min-height:100vh;min-height:100svh}
   .stage-copy{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
     clip:rect(0,0,0,0);white-space:nowrap;border:0}
+  html.webgl-failed #gl,html.webgl-failed .scrim{display:none}
+  html.webgl-failed .stage{min-height:auto!important}
+  html.webgl-failed .stage-copy{position:relative;width:auto;height:auto;margin:1rem 6vw;padding:1.25rem;overflow:visible;
+    clip:auto;white-space:normal;border:1px solid rgba(242,239,233,.18);border-radius:14px;background:var(--surface)}
+  html.webgl-failed .stage-copy h2{font-size:1.5rem;margin:.55rem 0}
+  html.webgl-failed .stage-copy p{color:#c4ccc9;line-height:1.55}
 
   /* ---- Signal Cloud: los 4 números más fuertes en un objeto 3D distinto (dial de calibración,
      no una placa más) — antes de Method. ---- */
@@ -197,12 +216,13 @@
 </style>
 </head>
 <body>
+  <a class="skip-link" href="#main-content">Skip to main content</a>
   <canvas id="gl" aria-hidden="true"></canvas>
   <div class="scrim" aria-hidden="true"></div>
   <div class="cursor-haze" aria-hidden="true"></div>
   <div class="grain" aria-hidden="true"></div>
 
-  <div class="content">
+  <main id="main-content" class="content" tabindex="-1">
     <nav>
       <span class="brand">A<span class="accent">+</span> GROWTH</span>
       <span class="links">
@@ -323,10 +343,10 @@
     </section>
 
     <section id="team" class="team" aria-label="Team">
-      <span class="mono team-eyebrow">A senior team accountable to growth</span>
+      <h2 class="mono team-eyebrow">A senior team accountable to growth</h2>
       <div class="team-grid">
         <div class="member lead">
-          <img src="assets/amir.jpg" alt="Amir Gómez" width="640" height="640">
+          <img src="assets/amir.jpg" alt="" width="640" height="640" loading="lazy" decoding="async">
           <h3>Amir Gómez</h3>
           <span class="mono role">Growth Lead</span>
           <!-- BUG DE COPY real (auditoría de redundancia, Fase 6): esta bio repetía "10 years,
@@ -336,13 +356,13 @@
           <p>Sets the strategy, runs point on every account, and holds the team accountable to one thing: revenue moved, not hours logged.</p>
         </div>
         <div class="member">
-          <img src="assets/maia.jpg" alt="Maia Gaitán" width="640" height="640">
+          <img src="assets/maia.jpg" alt="" width="640" height="640" loading="lazy" decoding="async">
           <h3>Maia Gaitán</h3>
           <span class="mono role">Acquisition Lead</span>
           <p>Turns strategy into coordinated acquisition across paid media, analytics, SEO and web — without losing the thread between channels.</p>
         </div>
         <div class="member">
-          <img src="assets/pilar.jpg" alt="Pilar Lucero" width="640" height="640">
+          <img src="assets/pilar.jpg" alt="" width="640" height="640" loading="lazy" decoding="async">
           <h3>Pilar Lucero</h3>
           <span class="mono role">Full-Funnel Data Analysis</span>
           <p>Finds the leaks between click, funnel and revenue, then turns the data into the next test the team should run.</p>
@@ -352,7 +372,7 @@
     </section>
 
     <section class="services" aria-label="Services">
-      <span class="mono services-eyebrow">What we do</span>
+      <h2 class="mono services-eyebrow">What we do</h2>
       <ul class="services-list">
         <li>Full-funnel paid media</li>
         <li>Creative &amp; UGC (+AI)</li>
@@ -370,12 +390,19 @@
         <a class="mono contact-alt" href="https://wa.me/5493541370209" target="_blank" rel="noopener">or WhatsApp +54 9 3541 370209</a>
       </div>
     </section>
+  </main>
 
-    <footer class="site-footer">
-      <span class="mono">A+ GROWTH</span>
-      <span class="mono">amirgomez.com</span>
-    </footer>
-  </div>
+  <footer class="site-footer">
+    <span class="mono">A+ GROWTH</span>
+    <span class="mono">amirgomez.com</span>
+  </footer>
+
+  <script>
+    // Si el modulo, WebGL o la fuente 3D fallan, revelar el espejo DOM en vez de dejar pantallas vacias.
+    window.setTimeout(()=>{
+      if(!document.documentElement.classList.contains('webgl-ready')) document.documentElement.classList.add('webgl-failed');
+    },8000);
+  </script>
 
   <script type="importmap">
   { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
@@ -392,6 +419,10 @@
   import { FontLoader } from 'three/addons/loaders/FontLoader.js';
   import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
   import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+
+  // Darle dos paints al HTML antes de construir la escena pesada mejora la primera impresion y
+  // evita que la inicializacion WebGL bloquee el contenido principal.
+  await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
 
   const REDUCE=matchMedia('(prefers-reduced-motion:reduce)').matches;
   const TOUCH=matchMedia('(pointer:coarse)').matches;
@@ -415,7 +446,7 @@
     // y ESO es lo que se ve "extremadamente pixelado" (bloques visibles, no solo bordes dentados).
     // Subido en los 3 tiers — sigue MUY por debajo del dpr real del dispositivo (nunca full nativo,
     // eso sí tumbaría el fps que ya se cuidó este mismo día), pero corta la peor parte del escalado.
-    if(small) return{dpr:Math.min(devicePixelRatio,1.5),count:5000,quality:'low',blurTaps:1,bloom:0.3};
+    if(small) return{dpr:Math.min(devicePixelRatio,1.25),count:2500,quality:'low',blurTaps:1,bloom:0};
     if(TOUCH) return{dpr:Math.min(devicePixelRatio,1.75),count:8000,quality:'mid',blurTaps:3,bloom:0.38};
     return{dpr:Math.min(devicePixelRatio,2),count:9000,quality:'high',blurTaps:5,bloom:0.45};})();
   // Tier bajo (mobile) corre menos fps bajo carga → menos frames disponibles para que el lerp de
@@ -606,7 +637,7 @@
   geo.setAttribute('aRnd',new THREE.BufferAttribute(rnd,1));
   geo.setAttribute('aBigZ',new THREE.BufferAttribute(bigZ,1));
 
-  const uniforms={ uTime:{value:0}, uOrder:{value:0.0}, uMouse:{value:new THREE.Vector3(99,99,99)}, uForce:{value:0} };
+  const uniforms={ uTime:{value:0}, uOrder:{value:0.0}, uMouse:{value:new THREE.Vector3(99,99,99)}, uForce:{value:0}, uReadFocus:{value:0} };
   const uSpin={value:0.5}, uTop={value:TUBE_TOP}, uSpan={value:TUBE_TOP-TUBE_BOTTOM};
   const mat=new THREE.ShaderMaterial({ uniforms:Object.assign(uniforms,{uSpin,uTop,uSpan}), transparent:true, depthWrite:false, blending:THREE.NormalBlending,
     vertexShader:`
@@ -656,7 +687,7 @@
         gl_Position=projectionMatrix*mv;
       }`,
     fragmentShader:`
-      varying float vOrder,vTwinkle;
+      uniform float uReadFocus; varying float vOrder,vTwinkle;
       void main(){
         vec2 uv=gl_PointCoord-0.5; float d=length(uv);
         if(d>0.5) discard;
@@ -669,7 +700,8 @@
         vec3 signalCol=vec3(1.35,0.46,0.16);  // señal calibrada: naranja de marca A+ Growth, HDR
         vec3 col=mix(chaosCol,signalCol,vOrder);
         col+=vTwinkle*vec3(1.1,0.9,0.6);       // destello: pico HDR por encima de 1.0 (el bloom lo agarra), moderado
-        gl_FragColor=vec4(col, min(1.0,a+vTwinkle*0.3));  // normal blending: el color se mantiene, no lava
+        float readingFade=1.0-uReadFocus*0.9;
+        gl_FragColor=vec4(col*readingFade, min(1.0,a+vTwinkle*0.3)*readingFade);
       }`});
   const points=new THREE.Points(geo,mat); scene.add(points);
 
@@ -886,6 +918,9 @@
   // placas atenuaría todas a la vez (el fade es POR PLACA).
   const bodyTextMat=new THREE.MeshBasicMaterial({color:0xf2efe9, toneMapped:false, transparent:true});
   const eyebrowTextMat=new THREE.MeshBasicMaterial({color:0xff6a2b, toneMapped:false, transparent:true});
+  const BODY_TEXT_CURVES=TIER.quality==='low'?3:8;
+  const DISPLAY_TEXT_CURVES=TIER.quality==='low'?4:14;
+  const DISPLAY_TEXT_BEVEL=TIER.quality!=='low';
   new FontLoader().load('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/fonts/helvetiker_bold.typeface.json', (font)=>{
   // Wrap de texto REAL (no a ojo por cantidad de caracteres): arma cada línea agregando palabras
   // hasta que la geometría medida (bounding box) se pasa del ancho disponible, recién ahí corta.
@@ -932,7 +967,7 @@
   // chico — no es el mismo problema que el bevel de antes (eso SÍ cuadriplicaba triángulos).
   function addTextLines(parent,mat,lines,size,lineHeight,topY,maxW,z){
     const geos=lines.map((line,li)=>{
-      const geo=new TextGeometry(line,{font,size,height:0.01,curveSegments:8,bevelEnabled:false});
+      const geo=new TextGeometry(line,{font,size,height:0.01,curveSegments:BODY_TEXT_CURVES,bevelEnabled:false});
       geo.computeBoundingBox();
       const w=geo.boundingBox.max.x-geo.boundingBox.min.x;
       geo.translate(-w/2,0,0);                                    // centrado horizontal, ANTES de escalar
@@ -970,8 +1005,8 @@
         // segmentos (6) para el tamaño real en el que se ve este texto. Subido a 14 — más triángulos
         // pero son ~13 meshes en TODO el sitio (título/hook), no las ~50 captions chicas donde sí
         // importaba mantenerlo bajo.
-        const geo=new TextGeometry(line,{font,size,height:0.1,curveSegments:14,
-          bevelEnabled:true,bevelThickness:0.014,bevelSize:0.01,bevelSegments:3});
+        const geo=new TextGeometry(line,{font,size,height:0.1,curveSegments:DISPLAY_TEXT_CURVES,
+          bevelEnabled:DISPLAY_TEXT_BEVEL,bevelThickness:0.014,bevelSize:0.01,bevelSegments:3});
         geo.computeBoundingBox();
         const w=geo.boundingBox.max.x-geo.boundingBox.min.x;
         geo.translate(-w/2,0,0);          // centrado horizontal
@@ -992,8 +1027,8 @@
     CASES.forEach((c,i)=>{
       const plate=casePlates[i];
       const hookMat=new THREE.MeshBasicMaterial({color:0xf2efe9, toneMapped:false, transparent:true});   // sólido, mismo criterio/razón que titleMat arriba
-      const geo=new TextGeometry(c.hook,{font,size:0.46,height:0.13,curveSegments:14,
-        bevelEnabled:true,bevelThickness:0.018,bevelSize:0.012,bevelSegments:3});
+      const geo=new TextGeometry(c.hook,{font,size:0.46,height:0.13,curveSegments:DISPLAY_TEXT_CURVES,
+        bevelEnabled:DISPLAY_TEXT_BEVEL,bevelThickness:0.018,bevelSize:0.012,bevelSegments:3});
       geo.computeBoundingBox();
       const bb0=geo.boundingBox;
       const w=bb0.max.x-bb0.min.x;
@@ -1019,8 +1054,8 @@
     CLOUD_STATS.forEach((s,i)=>{
       const group=cloudGroups[i];
       const hookMat=new THREE.MeshBasicMaterial({color:0xf2efe9, toneMapped:false, transparent:true});   // sólido, mismo criterio/razón que titleMat arriba
-      const geo=new TextGeometry(s.hook,{font,size:0.38,height:0.12,curveSegments:14,
-        bevelEnabled:true,bevelThickness:0.018,bevelSize:0.012,bevelSegments:3});
+      const geo=new TextGeometry(s.hook,{font,size:0.38,height:0.12,curveSegments:DISPLAY_TEXT_CURVES,
+        bevelEnabled:DISPLAY_TEXT_BEVEL,bevelThickness:0.018,bevelSize:0.012,bevelSegments:3});
       geo.computeBoundingBox();
       const bb0=geo.boundingBox;
       const w=bb0.max.x-bb0.min.x;
@@ -1045,6 +1080,8 @@
     // Si la fuente no carga (callback de error), no hay textos NI registro: todo queda al 100%
     // de opacidad, comportamiento anterior — degradación sin roturas.
     registerFadeGroups(plates); registerFadeGroups(casePlates); registerFadeGroups(cloudGroups);
+    document.documentElement.classList.remove('webgl-failed');
+    document.documentElement.classList.add('webgl-ready');
     // BUG de herramienta de verificación encontrado hoy: en modo ?shot, el loop síncrono de
     // frames corre INMEDIATAMENTE (misma tarea), mucho antes de que este callback de fuente
     // (carga de red async) llegue a ejecutarse — el texto 3D se agregaba a la escena DESPUÉS de
@@ -1054,7 +1091,10 @@
       updateProximity(); applyFocusFade();
       camera.lookAt(camLook); renderBackdrop(); composer.render();
     }
-  }, undefined, (err)=>console.warn('[amir] no se pudo cargar la fuente para los títulos 3D:',err));
+  }, undefined, (err)=>{
+    document.documentElement.classList.add('webgl-failed');
+    console.warn('[amir] no se pudo cargar la fuente para los títulos 3D:',err);
+  });
 
   // ---- Backdrop compartido: 1 render extra por frame (sin las placas) que TODAS samplean ----
   let bgRT=new THREE.WebGLRenderTarget(2,2,{depthBuffer:false});
@@ -1077,19 +1117,20 @@
 
   // ---- Hilo de señal: reusa la MISMA curva que ya envuelven las partículas (una sola materia) ----
   // Textura cibernética: dashes que fluyen a lo largo (uv.x=recorrido) + anillos de circuito (uv.y=circunferencia)
-  const threadUniforms={ uTime:{value:0} };
+  const threadUniforms={ uTime:{value:0},uReadFocus:{value:0} };
   const threadMat=new THREE.ShaderMaterial({
     uniforms:threadUniforms, transparent:true, depthWrite:false, toneMapped:false,
     vertexShader:`varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
     fragmentShader:`
-      uniform float uTime; varying vec2 vUv;
+      uniform float uTime,uReadFocus; varying vec2 vUv;
       void main(){
         float dash=step(0.5,fract(vUv.x*46.0-uTime*1.4));           // pulsos que corren hacia abajo (el flujo de señal)
         float ring=step(0.82,fract(vUv.y*5.0+uTime*0.15));           // anillos de "circuito" alrededor del tubo
         float base=0.28;
         float e=base+dash*0.55+ring*0.3;
         vec3 col=mix(vec3(0.85,0.38,0.16),vec3(1.0,0.78,0.58),dash*0.7+ring*0.4);  // naranja de marca (antes cian)
-        gl_FragColor=vec4(col*e, clamp(e,0.12,0.85));
+        float readingFade=1.0-uReadFocus*0.9;
+        gl_FragColor=vec4(col*e*readingFade, clamp(e,0.12,0.85)*readingFade);
       }`
   });
   const thread=new THREE.Mesh(new THREE.TubeGeometry(threadCurve,220,0.014,8,false),threadMat);
@@ -1097,7 +1138,7 @@
 
   const composer=new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene,camera));
-  if(!new URLSearchParams(location.search).has('nobloom')){   // TEMP DEBUG: ?nobloom para aislar el shader del bloom
+  if(TIER.bloom>0&&!new URLSearchParams(location.search).has('nobloom')){   // TEMP DEBUG: ?nobloom para aislar el shader del bloom
     composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),TIER.bloom,0.4,0.3));
   }
   // BUG real señalado por Agus con captura: los anillos/ticks/texto se ven pixelados, con bordes
@@ -1120,6 +1161,13 @@
   function fit(){renderer.setSize(innerWidth,innerHeight);composer.setSize(innerWidth,innerHeight);
     camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix(); resizeBgRT();}
   fit(); addEventListener('resize',fit);
+  let pairResizeTimer;
+  addEventListener('resize',()=>{
+    clearTimeout(pairResizeTimer);
+    pairResizeTimer=setTimeout(()=>{
+      if(((innerWidth/innerHeight)>=0.75)!==PAIR_SIDE) location.reload();
+    },180);
+  });
 
   // ---- Progreso de scroll → uOrder + cámara viajando por el eje (hero → Cloud → Method → Work) ----
   // OJO: `progress` ya NO es el % del documento ENTERO (rompía al insertar secciones nuevas: una
@@ -1294,7 +1342,7 @@
   // compite. Curva prox² para que el apagado sea agresivo apenas deja de ser la protagonista.
   // Los materiales se registran UNA vez (tras crear el texto, ver font callback) con su opacidad
   // BASE — cada frame se setea base*factor (no se acumula nada).
-  const FOCUS_FLOOR=0.02;
+  const FOCUS_FLOOR=TIER.quality==='low'?0:0.02;
   function registerFadeGroups(list){
     list.forEach(root=>{
       const mats=[];
@@ -1309,7 +1357,8 @@
     const journeyPresence=Math.max(0,Math.min(1,(-camLook.y-3)/3));
     const fade=(root,prox)=>{
       const mats=root.userData.fadeMats; if(!mats) return;
-      const f=(FOCUS_FLOOR+(1-FOCUS_FLOOR)*prox*prox)*journeyPresence;
+      const focusCurve=TIER.quality==='low'?Math.pow(prox,1.25):prox*prox;
+      const f=(FOCUS_FLOOR+(1-FOCUS_FLOOR)*focusCurve)*journeyPresence;
       for(const e of mats) e.m.opacity=e.base*f;
     };
     plates.forEach((p,i)=>fade(p,stageProximity[i]));
@@ -1358,6 +1407,9 @@
     // el número queda quieto y derecho (ver comentario en cloudGroups).
     cloudGroups.forEach(g=>{ g.userData.spin.rotation.z=REDUCE?0:t*g.userData.spinSpeed; });
     updateProximity();
+    const readFocus=Math.max(...stageProximity,...caseProximity,...cloudProximity);
+    uniforms.uReadFocus.value=readFocus;
+    threadUniforms.uReadFocus.value=readFocus;
     applyFocusFade();   // P0-A: una sola placa protagonista por vez, las vecinas casi apagadas
     // hover neón: en mouse, la placa apuntada se enciende a full. En touch no hay mousemove
     // (nunca se dispara), así que la reemplazamos por un glow suave y automático basado en
@@ -1371,10 +1423,15 @@
     casePlates.forEach((p,i)=>{
       const target=TOUCH ? caseProximity[i]*0.55 : ((p===hoveredPlate)?caseProximity[i]:0);
       p.material.userData.uHover.value+=(target-p.material.userData.uHover.value)*0.15; });
-    renderBackdrop();   // 1 render extra (sin placas) que todas samplean para la refracción
+    // En tier bajo el backdrop se actualiza frame por medio: mantiene la refraccion viva y corta
+    // aproximadamente a la mitad su pase extra mas caro.
+    if(TIER.quality!=='low'||frames%2===0) renderBackdrop();
     composer.render();
     frames++;
-    requestAnimationFrame(render);
+    // Reduced motion conserva el recorrido espacial pero sin deriva, spin ni twinkle; el canvas
+    // solo refresca a baja frecuencia y responde inmediatamente al scroll por CAM_LERP=1.
+    if(REDUCE) setTimeout(()=>requestAnimationFrame(render),100);
+    else requestAnimationFrame(render);
   }
   updateFromScroll();
   camera.lookAt(camLook); updateProximity();   // evita el flash de posición (0,0) en el primer frame
@@ -1386,7 +1443,10 @@
       uniforms.uTime.value=i*0.03; uniforms.uForce.value*=0.94;
       threadUniforms.uTime.value=i*0.03;
       cloudGroups.forEach(g=>{ g.userData.spin.rotation.z=(i*0.03)*g.userData.spinSpeed; });
-      updateProximity(); applyFocusFade();
+      updateProximity();
+      const readFocus=Math.max(...stageProximity,...caseProximity,...cloudProximity);
+      uniforms.uReadFocus.value=readFocus; threadUniforms.uReadFocus.value=readFocus;
+      applyFocusFade();
       camera.lookAt(camLook); renderBackdrop(); composer.render();
     }
     console.log('[amir] shot listo (sync)');
