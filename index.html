@@ -167,11 +167,11 @@
 
   /* ---- Signal Cloud: los 4 números más fuertes en un objeto 3D distinto (dial de calibración,
      no una placa más) — antes de Method. ---- */
-  #signal .stage{min-height:100svh}
+  #signal .stage{min-height:82svh}
   /* Method: 3 pasos (fusionados de 5) — sigue sin justificar una pantalla completa cada uno,
      "demasiada distancia" (feedback de Agus) — ritmo de scroll más corto. F6 (plan de rediseño,
      meta ≤6.5 pantallas totales): 66→60svh, el valor que pide el plan. */
-  #method .stage{min-height:60svh}
+  #method .stage{min-height:45svh}
 
   /* ---- Work: 6 casos agrupados de a PARES por tema (mitad del scroll que 6 pantallas sueltas,
      más narrativo). El nombre del tema (antes ".pair-theme" sticky, huérfano — feedback de Agus:
@@ -179,8 +179,8 @@
      ya anclado (".panel-eyebrow"), no un span suelto. En pantallas angostas (mobile) las 2 placas
      del par se apilan centradas en vez de ir lado a lado — ver PAIR_SIDE en JS. F6 (meta ≤6.5
      pantallas): 80→70svh (valor del plan), apilado 120→105svh proporcional. ---- */
-  #work .stage{min-height:70svh}
-  body.pairs-stack #work .stage{min-height:105svh}
+  #work .stage{min-height:52svh}
+  body.pairs-stack #work .stage{min-height:72svh}
 
   /* ---- Team: DOM puro, sin 3D (el eje ya terminó en Work) — Amir protagonista (columna más ancha) ---- */
   /* BUG P0 real, visto con captura de Chrome (auditoría /taste): Team/Services se dibujaban
@@ -248,9 +248,9 @@
   body.tail-active .contact h2{transform:translate3d(var(--liquid-dx,0px),var(--liquid-dy,0px),0)}
   .team-eyebrow,.services-eyebrow,.contact-eyebrow,.contact h2{transition:transform .18s linear}
 
-  .case-library{padding:5rem 6vw;position:relative;z-index:4;background:var(--bg)}
+  .case-library{padding:4rem 6vw;position:relative;z-index:4;background:var(--bg)}
   .case-library-head{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,.65fr);gap:2rem;align-items:end;max-width:1100px;margin-bottom:2.4rem}
-  .case-library h2{font-size:clamp(2.3rem,5vw,4.6rem);line-height:.98;letter-spacing:-.035em;max-width:12ch}
+  .case-library h2{font-size:clamp(2.1rem,4vw,3.6rem);line-height:1;letter-spacing:-.03em;max-width:14ch}
   .case-library-head p{color:#c4ccc9;line-height:1.6;max-width:42ch}
   .case-detail{max-width:1100px;border-top:1px solid rgba(242,239,233,.18)}
   .case-detail:last-child{border-bottom:1px solid rgba(242,239,233,.18)}
@@ -573,7 +573,7 @@
   // Tier bajo (mobile) corre menos fps bajo carga → menos frames disponibles para que el lerp de
   // cámara alcance su target, lo que se percibe como "el scroll responde lento/con gap". Compensar
   // con un lerp más agresivo por frame (12% vs 6%) cierra la distancia en menos frames.
-  const CAM_LERP=REDUCE?1:(TIER.quality==='low'?0.12:0.06);
+  const CAM_LERP=REDUCE?1:(TIER.quality==='low'?0.12:0.08);
   // Work: ¿los 2 casos de cada par van lado a lado (desktop/tablet) o apilados centrados
   // (mobile angosto)? Decidido UNA vez al cargar (mismo patrón que TIER) — lado a lado necesita
   // presupuesto de frustum horizontal que un portrait angosto no tiene (ver CASES más abajo).
@@ -1401,8 +1401,10 @@
     // y entra a Team — arranca un poco ANTES del límite (journeyBottom) para que la transición se
     // sienta como un fundido, no un corte, y es bidireccional (si el usuario vuelve a subir, el
     // canvas reaparece solo, sin flags ni estado — pura función de scrollY).
-    const canvasFadeStart=journeyBottom-innerHeight*0.35;
-    const canvasFadeDist=innerHeight*0.55;
+    // Terminar el mundo 3D exactamente al cerrar Work. Antes quedaba a ~36% de opacidad durante
+    // el inicio de Case context y se veían placas viejas por arriba/abajo del bloque editorial.
+    const canvasFadeStart=journeyBottom-innerHeight*0.5;
+    const canvasFadeDist=innerHeight*0.5;
     const canvasFadeP=Math.max(0,Math.min(1,(scrollY-canvasFadeStart)/canvasFadeDist));
     canvas.style.opacity=String(1-canvasFadeP);
     mainCanvasActive=canvasFadeP<0.995;
@@ -1480,7 +1482,10 @@
     const journeyPresence=Math.max(0,Math.min(1,(-camLook.y-3)/3));
     const fade=(root,prox)=>{
       const mats=root.userData.fadeMats; if(!mats) return;
-      const focusCurve=TIER.quality==='low'?Math.pow(prox,1.25):prox*prox;
+      // En desktop prox² dejaba ambas placas al ~26% justo en el punto medio: durante ese tramo
+      // se percibía sólo el embudo. 1.55 mantiene una transición legible (~35%) sin volver al
+      // viejo túnel de objetos al 100%.
+      const focusCurve=TIER.quality==='low'?Math.pow(prox,1.25):Math.pow(prox,1.55);
       const f=(FOCUS_FLOOR+(1-FOCUS_FLOOR)*focusCurve)*journeyPresence;
       for(const e of mats) e.m.opacity=e.base*f;
     };

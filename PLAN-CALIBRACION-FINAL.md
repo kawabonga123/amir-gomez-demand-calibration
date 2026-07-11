@@ -202,3 +202,18 @@ Se aplicó la auditoría comercial/visual sin eliminar la experiencia existente:
 - El detector de colisión del Hero ahora mide la fila de evidencia (último elemento real), no sólo el CTA: a 1568×783 oculta correctamente el cue; 375×667 conserva CTA y evidencia dentro del viewport.
 
 Evidencia visual: Hero 1440×900 limpio; Case context expandible y navegable; Team con corriente activa sin pérdida de contraste; Hero y Case context 375×812 sin overflow; consola limpia en ambos modos.
+
+## COMPRESIÓN DEL VIAJE 3D — 2026-07-11
+
+Feedback real de Agus: había tramos de scroll donde sólo quedaba el embudo, desperdiciando real estate. Se corrigió estructura y transición:
+
+- Signal 100→82 svh.
+- Method 60→45 svh por etapa.
+- Work 70→52 svh por par; stacked tablet 105→72 svh.
+- Viaje Hero→fin de Work: 4,9→3,73 viewports (aprox. 1,17 pantallas menos).
+- Lerp desktop 0,06→0,08 para que la cámara alcance antes el contenido después de un scroll rápido.
+- Crossfade de proximidad desktop prox²→prox^1,55: en el punto medio las placas quedan ~35% visibles en lugar de ~26%, evitando “sólo embudo” sin volver al túnel superpuesto.
+- El canvas 3D termina su fade exactamente al cerrar Work. En `Case context` su opacidad medida es 0; desaparecieron las placas residuales que se veían arriba/abajo del bloque editorial.
+- `Case context` redujo heading 72→58 px aprox. y padding vertical 5→4 rem.
+
+Validación puntual: capturas en los dos midpoints más débiles (Method -17,5 y Work -31,5) muestran contenido a ambos lados del eje; Case context al top muestra fondo limpio y Services entra con la nueva corriente, sin capas viejas.
