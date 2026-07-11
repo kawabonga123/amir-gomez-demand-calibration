@@ -307,3 +307,14 @@ Auditoría mobile-first con Innovatron, UI/UX Pro Max y el criterio de Agus. Hal
 - Reduced motion comprobado: cámara 0→-23,25 después del scroll, WebGL activo y 0 overflow. Landscape 812×375 funcional.
 
 Evidencia final: 375×812, 375×667, 812×375 y 1440×900; 0 overflow y 0 errores. Desktop conserva 9.000 partículas, 3 Method, 6 Work y coordenadas originales. Lighthouse mobile: Performance 71, Accessibility 100, Best Practices 100, SEO 100; LCP 1,3 s, CLS 0,001, TBT 2.680 ms. Scroll bajo throttle CPU 4× medido por encima de 60 fps en el entorno automatizado.
+
+## TRANSICIÓN WORK → CASE CONTEXT SIN CORTE — 2026-07-11
+
+Captura real de Agus en desktop: Case context entraba como superficie opaca antes de que el último par de Work alcanzara su pose final; además quedaba una fracción del canvas visible detrás de Services. El problema era el mapeo temporal, no el z-index.
+
+- Work ya no mapea su último caso contra el bottom físico de la sección. `workReadableEnd` ocurre 0,82 viewport antes: el último par se centra completo mientras Case context todavía está bajo el fold.
+- El fade comienza cuando Case context llega al 68% del viewport y termina al 30%, en vez de 50%→0%.
+- Al terminar, el canvas mantiene el corte duro `opacity:0 + visibility:hidden`; ninguna placa puede aparecer debajo de Services.
+- La función es reversible al volver hacia arriba y se aplica a desktop/mobile sin bifurcar arquitectura.
+
+Evidencia 2048×975: último par 3.7X/5.3X completo con Case context recién entrando abajo; a `caseTop=59,75`, canvas opacity 0/hidden, heading left 122,875 px y 0 overflow. Mobile 375×812: último caso y=-55,5, cámara -55,485 con Case context a 666 px; a caseTop 50 px, canvas 0/hidden y 0 overflow. Consola limpia.

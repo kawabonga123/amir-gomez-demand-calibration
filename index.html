@@ -1394,7 +1394,10 @@
       const p=Math.max(0,Math.min(1,(scrollY-methodTop)/Math.max(1,workTop-methodTop)));
       camLookTargetY=lerp(CLOUD_Y_END, METHOD_Y_END, p);
     }else{
-      const p=Math.max(0,Math.min(1,(scrollY-workTop)/Math.max(1,journeyBottom-workTop)));
+      // El último caso debe llegar al centro ANTES de que Case context entre a taparlo. Mapear
+      // hasta el bottom físico de Work lo enfocaba recién cuando el bloque opaco ya estaba arriba.
+      const workReadableEnd=journeyBottom-innerHeight*.82;
+      const p=Math.max(0,Math.min(1,(scrollY-workTop)/Math.max(1,workReadableEnd-workTop)));
       camLookTargetY=lerp(METHOD_Y_END, lastPlateY, p);
     }
     // Casi frontal: 0.32 unidades de desnivel sobre Z=5.2 equivalen a ~3.5°, suficiente para
@@ -1412,8 +1415,11 @@
     // canvas reaparece solo, sin flags ni estado — pura función de scrollY).
     // Terminar el mundo 3D exactamente al cerrar Work. Antes quedaba a ~36% de opacidad durante
     // el inicio de Case context y se veían placas viejas por arriba/abajo del bloque editorial.
-    const canvasFadeStart=journeyBottom-innerHeight*0.5;
-    const canvasFadeDist=innerHeight*0.5;
+    // Último par centrado con Case context todavía bajo el fold; recién después empieza el fade.
+    // El canvas queda físicamente oculto cuando el bloque editorial llega al 30% del viewport,
+    // evitando que las placas reaparezcan detrás de Services durante la transición.
+    const canvasFadeStart=journeyBottom-innerHeight*.68;
+    const canvasFadeDist=innerHeight*.38;
     const canvasFadeP=Math.max(0,Math.min(1,(scrollY-canvasFadeStart)/canvasFadeDist));
     canvas.style.opacity=String(1-canvasFadeP);
     mainCanvasActive=canvasFadeP<0.995;
