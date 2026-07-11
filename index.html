@@ -1419,6 +1419,10 @@
     const canvasFadeP=Math.max(0,Math.min(1,(scrollY-canvasFadeStart)/canvasFadeDist));
     canvas.style.opacity=String(1-canvasFadeP);
     mainCanvasActive=canvasFadeP<0.995;
+    // Opacity 0 no siempre retira una superficie WebGL de la composición GPU (especialmente tras
+    // scroll rápido/cache de capa). Al terminar el fade, sacarla explícitamente: ninguna placa
+    // puede atravesar Case context, Services o el canvas líquido inferior. Es reversible al subir.
+    canvas.style.visibility=mainCanvasActive?'visible':'hidden';
     // BUG real señalado por Agus con captura ("un corte en esta parte"): el fundido de arriba
     // apaga el canvas, pero Team (contenido DOM normal) aparece a opacidad PLENA en cuanto su
     // borde superior entra al viewport — eso pasa ANTES de que el canvas termine de apagarse,

@@ -241,3 +241,14 @@ Feedback real de Agus: Work y otros elementos 3D se percibían demasiado apaisad
 - Al terminar Work, el scrim vuelve para proteger el copy DOM sobre la corriente líquida.
 
 Validación local: par Work capturado con placas verticales, bordes paralelos y jerarquía completa visible; Method frontal; consola sin errores; mobile-lite conserva su composición editorial sin WebGL.
+
+## CORTE DURO ENTRE WORK Y CASE CONTEXT — 2026-07-11
+
+Una captura real de Agus mostró las últimas placas 3D atravesando Services debajo de Case context. Aunque la medición local daba `opacity:0` en el límite exacto, una superficie WebGL todavía podía permanecer compuesta por GPU tras un scroll rápido.
+
+- El fundido progresivo se conserva.
+- Al llegar a 99,5% de fundido, `#gl` pasa también a `visibility:hidden` y deja físicamente la composición.
+- Al volver hacia Work, recupera `visibility:visible` automáticamente.
+- La corriente inferior sigue activa de manera independiente; Services muestra líquido, nunca placas anteriores.
+
+Validación a 1727×947 con scroll rápido: Case context limpio; Services con corriente líquida solamente; canvas principal en opacity 0 + hidden; consola sin errores.
