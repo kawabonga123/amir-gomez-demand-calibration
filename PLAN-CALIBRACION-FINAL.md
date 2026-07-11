@@ -264,3 +264,16 @@ Feedback real de Agus: el mouse inferior era hipersensible y choppy, sin curva n
 - Scroll velocity e impulse también decaen por tiempo real, no por cantidad de frames.
 
 Validación Playwright a 1440×900: ante un salto amplio, `--liquid-dx` recorrió -0,81 → -0,24 → 0,16 → 0,62 → 0,89 → 1,00 px entre 0 y 550 ms, confirmando una curva continua con valores intermedios; consola sin errores.
+
+## MOBILE CON MATERIA Y MOVIMIENTO — 2026-07-11
+
+Feedback real de Agus: mobile había quedado como un sitio estático con sólo texto. La estrategia mobile-lite evitaba correctamente el costo de Three.js, pero había eliminado también el concepto visual del producto. Se mantuvo la arquitectura adaptativa y se agregó una experiencia propia para teléfono:
+
+- Canvas 2D procedural fijo con 140 partículas y una corriente de señal orgánica, limitado a 30 fps y DPR máximo 1,5.
+- La corriente acelera con el scroll, se curva con la velocidad y se dispersa alrededor del dedo/puntero.
+- Evidence, Method y Cases dejaron de ser texto suelto: ahora viven en paneles materiales con profundidad, borde, luz interna y un nodo de calibración pulsante.
+- IntersectionObserver revela paneles, casos, servicios, equipo y contacto al entrar, con movimiento escalonado y sin listeners por elemento.
+- `prefers-reduced-motion` conserva la composición visual pero congela la animación y elimina las entradas.
+- Three.js sigue sin descargarse ni evaluarse en mobile; desktop mantiene su WebGL y oculta por completo el canvas 2D.
+
+Validación 375×812: `mobile-flow` visible, frames distintos tras scroll/touch (`moved:true`), 0 overflow y consola limpia. Captura real muestra partículas y corriente entre paneles. Desktop 1440×900: `mobileCanvas:none`, WebGL activo y 0 overflow. Lighthouse no entregó reporte por un error EPERM al limpiar su carpeta temporal de Windows; no se atribuye un score sin evidencia.
