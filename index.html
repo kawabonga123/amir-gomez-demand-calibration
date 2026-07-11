@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>A+ Growth — Demand Calibration</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23050608'/%3E%3Ctext x='9' y='44' font-family='Arial,sans-serif' font-size='35' font-weight='700' fill='%23f2efe9'%3EA%3C/text%3E%3Ctext x='39' y='39' font-family='Arial,sans-serif' font-size='21' font-weight='700' fill='%23ff6a2b'%3E%2B%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -91,10 +92,17 @@
      direcciones saltando el layout (100svh ya cubre eso arriba), CTA más compacto. ---- */
   @media(max-width:640px){
     nav{padding-top:1.15rem;padding-bottom:1.15rem}
-    nav .links{gap:1rem}
-    nav .links a{font-size:.6rem;letter-spacing:.08em}
+    nav .links{gap:1rem;align-items:center}
+    /* Cinco links en 375px obligaban a targets diminutos y dejaban el header visualmente
+       apretado. En mobile quedan los tres destinos que resumen el recorrido completo; Method y
+       Team siguen en el flujo natural de la pagina. Cada link conserva un target tactil real. */
+    nav .links a{display:flex;align-items:center;min-height:44px;font-size:.62rem;letter-spacing:.08em;padding-bottom:0}
+    nav .links a:nth-child(2),nav .links a:nth-child(4){display:none}
     .hero p.sub{font-size:.95rem}
     .cta{padding:.85rem 1.4rem;font-size:.85rem;margin-top:2rem}
+    /* En una pantalla angosta el cue fijo compite con la primera constelacion 3D. El CTA y la
+       continuidad vertical ya dan el affordance de scroll; ocultarlo es mas claro que apilarlo. */
+    .scroll-cue{display:none}
   }
   @media(max-width:380px){
     nav .links{gap:.6rem}
@@ -137,8 +145,7 @@
   /* F6 (meta ≤6.5 pantallas): padding vertical recortado (8/6rem→5/4rem), gap y margen del
      cierre más chicos — Team era la sección más pesada del tramo DOM sin ganar legibilidad real
      con tanto aire. Las fotos (aspect-ratio 1/1) siguen fijando el piso de altura real. */
-  .team{padding:5rem 6vw 4rem;position:relative;z-index:4;
-    background:linear-gradient(to bottom, transparent 0, var(--bg) 9rem, var(--bg) 100%)}
+  .team{padding:5rem 6vw 4rem;position:relative;z-index:4;background:var(--bg)}
   .team-eyebrow{display:block;margin-bottom:1.8rem}
   /* BUG real señalado por Agus con captura: "por alguna razón Amir sale más grande" — la columna
      de Amir tenía 1.3fr (a propósito, en la ronda de F5 se pensó como "protagonista"), pero con
@@ -316,7 +323,7 @@
     </section>
 
     <section id="team" class="team" aria-label="Team">
-      <span class="mono team-eyebrow">Professionals obsessed with growth</span>
+      <span class="mono team-eyebrow">A senior team accountable to growth</span>
       <div class="team-grid">
         <div class="member lead">
           <img src="assets/amir.jpg" alt="Amir Gómez" width="640" height="640">
@@ -332,16 +339,16 @@
           <img src="assets/maia.jpg" alt="Maia Gaitán" width="640" height="640">
           <h3>Maia Gaitán</h3>
           <span class="mono role">Acquisition Lead</span>
-          <p>5+ years running 360° digital campaigns. Meta, Google, GA4, SEO, web development, and more.</p>
+          <p>Turns strategy into coordinated acquisition across paid media, analytics, SEO and web — without losing the thread between channels.</p>
         </div>
         <div class="member">
           <img src="assets/pilar.jpg" alt="Pilar Lucero" width="640" height="640">
           <h3>Pilar Lucero</h3>
           <span class="mono role">Full-Funnel Data Analysis</span>
-          <p>Analysis of the full process and its results. Constant improvement of active resources, research and growth tactics.</p>
+          <p>Finds the leaks between click, funnel and revenue, then turns the data into the next test the team should run.</p>
         </div>
       </div>
-      <p class="mono team-note">The best idea wins — 100% collaborative.</p>
+      <p class="mono team-note">Strategy, creative and data stay in the same room.</p>
     </section>
 
     <section class="services" aria-label="Services">
@@ -356,10 +363,10 @@
     </section>
 
     <section id="contact" class="contact" aria-label="Contact">
-      <span class="mono contact-eyebrow">Let's talk</span>
-      <h2>Let's build something extraordinary.</h2>
+      <span class="mono contact-eyebrow">Ready to calibrate?</span>
+      <h2>Let’s find what your growth budget should scale next.</h2>
       <div class="contact-actions">
-        <a class="cta" href="mailto:amir@amirgomez.com"><span>Email Amir</span><span class="arrow">→</span></a>
+        <a class="cta" href="mailto:amir@amirgomez.com?subject=Growth%20audit%20request"><span>Request a growth audit</span><span class="arrow">→</span></a>
         <a class="mono contact-alt" href="https://wa.me/5493541370209" target="_blank" rel="noopener">or WhatsApp +54 9 3541 370209</a>
       </div>
     </section>
@@ -414,7 +421,7 @@
   // Tier bajo (mobile) corre menos fps bajo carga → menos frames disponibles para que el lerp de
   // cámara alcance su target, lo que se percibe como "el scroll responde lento/con gap". Compensar
   // con un lerp más agresivo por frame (12% vs 6%) cierra la distancia en menos frames.
-  const CAM_LERP=TIER.quality==='low'?0.12:0.06;
+  const CAM_LERP=REDUCE?1:(TIER.quality==='low'?0.12:0.06);
   // Work: ¿los 2 casos de cada par van lado a lado (desktop/tablet) o apilados centrados
   // (mobile angosto)? Decidido UNA vez al cargar (mismo patrón que TIER) — lado a lado necesita
   // presupuesto de frustum horizontal que un portrait angosto no tiene (ver CASES más abajo).
@@ -1057,9 +1064,13 @@
       plateMaterials.forEach(m=>{ if(m.userData.shader) m.userData.shader.uniforms.uResolution.value.set(w,h); }); }
   }
   function renderBackdrop(){
-    allPlates.forEach(p=>p.visible=false);
+    // Todo objeto que samplea bgRT debe quedar fuera de ESTE pase. Los diales tambien usan
+    // frostGlass; dejarlos visibles mientras leen bgRT.texture crea un feedback loop WebGL
+    // (GL_INVALID_OPERATION) y cientos de warnings por segundo en Chrome.
+    const backdropConsumers=[...allPlates,...cloudGroups];
+    backdropConsumers.forEach(p=>p.visible=false);
     renderer.setRenderTarget(bgRT); renderer.render(scene,camera); renderer.setRenderTarget(null);
-    allPlates.forEach(p=>p.visible=true);
+    backdropConsumers.forEach(p=>p.visible=true);
     plateMaterials.forEach(m=>{ if(m.userData.shader){ m.userData.shader.uniforms.tBackdrop.value=bgRT.texture;
       m.userData.shader.uniforms.uResolution.value.set(bgRT.width,bgRT.height); } });
   }
@@ -1229,9 +1240,9 @@
     // borde superior entra al viewport — eso pasa ANTES de que el canvas termine de apagarse,
     // así que por un tramo se ven las DOS capas superpuestas (placas fantasma semi-transparentes
     // detrás de fotos/texto ya nítidos) — un "corte"/glitch, no una transición limpia. Fix:
-    // Team hace un fundido de ENTRADA con la MISMA curva (mismo tramo de scroll) — cuando el
-    // canvas está en 0, Team ya está en 1; nunca coinciden "una capa nítida sobre otra fantasma".
-    if(teamEl) teamEl.style.opacity=String(canvasFadeP);
+    // Team es una superficie DOM solida. No bajar su opacidad: eso vuelve translucidas tambien
+    // las fotos y deja que placas/textos 3D atraviesen caras y copy. El canvas se apaga debajo;
+    // el fondo opaco de Team garantiza un cierre limpio y legible desde su primer pixel.
   }
   addEventListener('scroll',updateFromScroll,{passive:true});
 
@@ -1269,11 +1280,10 @@
   function updateProximity(){
     for(let i=0;i<STAGES.length;i++) stageProximity[i]=Math.max(0,Math.min(1,1-Math.abs(camLook.y-STAGES[i].y)/5));
     for(let i=0;i<CASES.length;i++) caseProximity[i]=Math.max(0,Math.min(1,1-Math.abs(camLook.y-CASES[i].y)/5));
-    // rango más ancho (/8) para los diales: son una CONSTELACIÓN (se diseñaron para verse juntos)
-    // — con /5 los diales lejanos del cluster se apagaban demasiado mientras el usuario todavía
-    // está recorriendo la propia nube. /8 los mantiene presentes dentro de Signal y aun así los
-    // apaga bien cuando la cámara ya está en Method (distancia 4-7 unidades → 0.5-0.13 de prox).
-    for(let i=0;i<CLOUD_STATS.length;i++) cloudProximity[i]=Math.max(0,Math.min(1,1-Math.abs(camLook.y-CLOUD_STATS[i].y)/8));
+    // La constelacion ocupa apenas ~3 unidades: /5 mantiene sus cuatro diales presentes dentro de
+    // Signal, pero los retira antes de que Method entre al centro. El rango anterior (/8) dejaba
+    // captions de Results todavia legibles encima de la primera placa en mobile.
+    for(let i=0;i<CLOUD_STATS.length;i++) cloudProximity[i]=Math.max(0,Math.min(1,1-Math.abs(camLook.y-CLOUD_STATS[i].y)/5));
   }
   // ---- Focus por proximidad (P0-A de la auditoría 2026-07-09, la queja MÁS repetida de Agus:
   // "se sobreponen las placas", "no se llega a leer") ----
@@ -1284,7 +1294,7 @@
   // compite. Curva prox² para que el apagado sea agresivo apenas deja de ser la protagonista.
   // Los materiales se registran UNA vez (tras crear el texto, ver font callback) con su opacidad
   // BASE — cada frame se setea base*factor (no se acumula nada).
-  const FOCUS_FLOOR=0.08;
+  const FOCUS_FLOOR=0.02;
   function registerFadeGroups(list){
     list.forEach(root=>{
       const mats=[];
@@ -1293,9 +1303,13 @@
     });
   }
   function applyFocusFade(){
+    // El piso fantasmal sirve ENTRE placas, pero en el Hero todavia no debe existir ninguna.
+    // Revelar el mundo de resultados solo cuando la camara empieza a acercarse a Signal evita
+    // que los diales asomen al pie de pantallas portrait con frustum vertical muy alto.
+    const journeyPresence=Math.max(0,Math.min(1,(-camLook.y-3)/3));
     const fade=(root,prox)=>{
       const mats=root.userData.fadeMats; if(!mats) return;
-      const f=FOCUS_FLOOR+(1-FOCUS_FLOOR)*prox*prox;
+      const f=(FOCUS_FLOOR+(1-FOCUS_FLOOR)*prox*prox)*journeyPresence;
       for(const e of mats) e.m.opacity=e.base*f;
     };
     plates.forEach((p,i)=>fade(p,stageProximity[i]));
@@ -1326,7 +1340,7 @@
     } else { uniforms.uOrder.value=0.32; camera.position.set(0,0.8,9*aspectZScale()); camLook.set(0,0,0); }
   }
   function render(){
-    const t=clock.getElapsedTime();
+    const t=REDUCE?0:clock.getElapsedTime();
     uniforms.uTime.value=t; uniforms.uForce.value*=0.94;
     threadUniforms.uTime.value=t;
     // BUG real señalado por Agus ("en mobile el scroll se siente lento"): el lerp de cámara
@@ -1342,7 +1356,7 @@
     camera.lookAt(camLook);
     // los diales de PROOF giran lentamente (pedido de Agus) — solo el sub-group ring+ticks+aguja,
     // el número queda quieto y derecho (ver comentario en cloudGroups).
-    cloudGroups.forEach(g=>{ g.userData.spin.rotation.z=t*g.userData.spinSpeed; });
+    cloudGroups.forEach(g=>{ g.userData.spin.rotation.z=REDUCE?0:t*g.userData.spinSpeed; });
     updateProximity();
     applyFocusFade();   // P0-A: una sola placa protagonista por vez, las vecinas casi apagadas
     // hover neón: en mouse, la placa apuntada se enciende a full. En touch no hay mousemove
@@ -1360,7 +1374,6 @@
     renderBackdrop();   // 1 render extra (sin placas) que todas samplean para la refracción
     composer.render();
     frames++;
-    if(REDUCE&&frames>2) return;
     requestAnimationFrame(render);
   }
   updateFromScroll();
@@ -1373,6 +1386,7 @@
       uniforms.uTime.value=i*0.03; uniforms.uForce.value*=0.94;
       threadUniforms.uTime.value=i*0.03;
       cloudGroups.forEach(g=>{ g.userData.spin.rotation.z=(i*0.03)*g.userData.spinSpeed; });
+      updateProximity(); applyFocusFade();
       camera.lookAt(camLook); renderBackdrop(); composer.render();
     }
     console.log('[amir] shot listo (sync)');

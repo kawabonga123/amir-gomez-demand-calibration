@@ -133,3 +133,16 @@
 ## RESUMEN EJECUTIVO — SESIÓN 2026-07-09 COMPLETA
 
 Las 6 fases del plan (P0-A, P0-B, P0-C, P1-D, P1-E, P1-F, P2-G) están **ejecutadas, commiteadas, deployadas y verificadas en vivo** con evidencia técnica exacta. La única condición sin cumplir al 100% es la evidencia FOTOGRÁFICA (punto 7), bloqueada por un límite de herramienta confirmado en 3 superficies distintas — no por falta de intentos ni por decisión unilateral de saltear la verificación. El sitio está en su mejor estado de esta sesión: sin túnel de placas superpuestas, texto siempre legible, Hero sin solapes, placas alineadas, nav no compite con el contenido, y copy sin redundancias entre Signal y Work.
+
+## REAPERTURA Y CIERRE — 2026-07-11
+
+Una nueva recorrida real con Playwright encontró regresiones que la verificación anterior no había capturado:
+
+- En 375×812 los diales de Signal asomaban dentro del Hero y competían con el cue fijo. Se agregó una compuerta de presencia ligada a `camLook.y`, se ocultó el cue en mobile y se corrigió `?shot` para aplicar el mismo focus que el render normal.
+- El nav de cinco links no daba targets táctiles aceptables en 375px. Mobile conserva Results / Work / Contact con 44px reales; Method y Team siguen disponibles en el recorrido natural.
+- La entrada a Team aplicaba opacidad al contenedor completo, haciendo transparentes fotos y copy sobre el WebGL. Team ahora es una superficie sólida y el canvas se apaga por debajo.
+- Los diales frosted no se ocultaban durante `renderBackdrop()`, provocando `GL_INVALID_OPERATION: Feedback loop formed between Framebuffer and active Texture` cientos de veces. Todos los consumidores de `bgRT` quedan fuera del pase; consola final: 0 errores, 0 warnings.
+- `prefers-reduced-motion` congelaba el render después de dos frames y dejaba la cámara sin responder al scroll. Ahora conserva navegación inmediata, partículas/diales estáticos y render funcional.
+- Copy genérico de Team/Contact reemplazado por lenguaje específico de adquisición, señal y próxima decisión de inversión.
+
+Evidencia local final: 0 overflow horizontal en 375×667 y 375×812; CTA/nav con targets de 44px o más; fotos Team 315×315 cargadas; Hero, Team y Contact capturados limpios; desktop 1440×900 limpio; reduced motion probado con scroll real; consola limpia.
