@@ -54,7 +54,11 @@
   body.tail-active #tail-liquid{opacity:1}
   /* scrim: oscurece la izquierda (donde vive el texto) para legibilidad, sin tapar el efecto */
   .scrim{position:fixed;inset:0;z-index:1;pointer-events:none;
-    background:linear-gradient(100deg, rgba(5,6,8,.92) 0%, rgba(5,6,8,.6) 28%, rgba(5,6,8,.05) 55%, transparent 70%)}
+    background:linear-gradient(100deg, rgba(5,6,8,.92) 0%, rgba(5,6,8,.6) 28%, rgba(5,6,8,.05) 55%, transparent 70%);
+    transition:opacity .45s var(--ease)}
+  /* El scrim protege copy DOM en Hero/cola editorial. Sobre las placas 3D oscurecía sólo la
+     columna izquierda y hacía que dos casos equivalentes parecieran tener distinto contraste. */
+  body.journey-active .scrim{opacity:0}
   .grain{position:fixed;inset:-50%;z-index:2;pointer-events:none;opacity:.05;
     background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");animation:grain 8s steps(6) infinite}
   @keyframes grain{0%,100%{transform:translate(0,0)}25%{transform:translate(-4%,3%)}50%{transform:translate(3%,-3%)}75%{transform:translate(-2%,4%)}}
@@ -1368,9 +1372,13 @@
     // Sigue existiendo para camTargetY/Z (framing suave, no necesita trackear contenido exacto).
     const journeyTop=heroEl.offsetHeight;
     const journeyBottom=workEl.offsetTop+workEl.offsetHeight;
+    document.body.classList.toggle('journey-active',scrollY>=journeyTop&&scrollY<journeyBottom);
     const journeyScrollable=Math.max(1, journeyBottom-innerHeight-journeyTop);
     progress=Math.max(0,Math.min(1,(scrollY-journeyTop)/journeyScrollable));
-    camTargetY=lerp(HERO_CAM_Y, lastPlateY-3, progress);
+    // La altura final de cámara se resuelve después de calcular camLookTargetY. Antes viajaba
+    // linealmente hasta `lastPlateY-3` mientras el punto de mirada seguía otro mapeo por secciones:
+    // esa divergencia inclinaba la cámara hasta ~30° y aplastaba placas verticales en trapecios
+    // aparentemente apaisados. Cámara y contenido deben compartir el mismo eje de lectura.
     // Z NO puede cerrar linealmente a lo largo de TODO el viaje (Cloud+Method+Work): con la nube
     // temprano en un journey largo, progress todavía es chico ahí y la cámara quedaba lejísimos
     // (Z≈20 en mobile, verificado — la nube se veía perdida/chica, todo lo contrario del pedido
@@ -1391,6 +1399,9 @@
       const p=Math.max(0,Math.min(1,(scrollY-workTop)/Math.max(1,journeyBottom-workTop)));
       camLookTargetY=lerp(METHOD_Y_END, lastPlateY, p);
     }
+    // Casi frontal: 0.32 unidades de desnivel sobre Z=5.2 equivalen a ~3.5°, suficiente para
+    // percibir espesor/material sin comprimir la tipografía. En Hero se conserva la pose original.
+    camTargetY=progress>0 ? camLookTargetY+0.32 : HERO_CAM_Y;
     if(scrollCueEl) scrollCueEl.style.opacity=(scrollY>heroEl.offsetHeight*0.35||cueBlockedByLayout)?0:1;
     // BUG real señalado por Agus con captura desktop ("esta parte no se llega a ver bien"): el
     // canvas 3D es `position:fixed` (ver CSS #gl) y renderiza SIEMPRE, sin importar el scroll —
@@ -1507,7 +1518,7 @@
       // shot verifica lo mismo que el usuario ve al scrollear hasta esa etapa/caso/número.
       const pAt=s.y/lastPlateY;
       const zAt=Math.min(1,pAt*14);   // misma saturación rápida de Z que updateFromScroll()
-      camera.position.set(0, lerp(HERO_CAM_Y,lastPlateY-3,pAt), lerp(9,5.2,zAt)*aspectZScale());
+      camera.position.set(0, s.y+0.32, lerp(9,5.2,zAt)*aspectZScale());
       camLook.set(0, s.y, 0);
       uniforms.uOrder.value=1;
       if(params.has('hover')){   // ?shot&stage=N&hover / ?shot&case=N&hover → verificar neón

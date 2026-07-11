@@ -229,3 +229,15 @@ Feedback real de Agus: la corriente inferior se percibía como iluminación atmo
 - Mobile mantiene la composición editorial estática y `prefers-reduced-motion` conserva una versión quieta.
 
 Validación local: canvas activo a 1440×900, respuesta diferenciada capturada en reposo / pointer wake / scroll wake, 0 overflow horizontal y consola sin errores ni warnings.
+
+## LEGIBILIDAD FRONTAL DE PLACAS — 2026-07-11
+
+Feedback real de Agus: Work y otros elementos 3D se percibían demasiado apaisados y difíciles de leer. La geometría de Work ya era vertical (2,6×3), pero la cámara y el punto de mirada seguían curvas Y distintas: al final del viaje llegaban a separarse hasta 3 unidades sobre Z=5,2, inclinando la lectura cerca de 30° y comprimiendo la altura aparente.
+
+- La cámara ahora deriva su altura del mismo `camLookTargetY` que sigue al contenido.
+- Se conserva sólo un desnivel de 0,32 unidades, equivalente a ~3,5°: suficiente para mostrar espesor sin deformar texto.
+- El modo de captura por etapa replica esa misma pose frontal.
+- El scrim fijo del Hero se apaga durante Signal / Method / Work. Antes oscurecía únicamente la columna izquierda y hacía ilegible una placa aunque ambas tuvieran el mismo color y foco.
+- Al terminar Work, el scrim vuelve para proteger el copy DOM sobre la corriente líquida.
+
+Validación local: par Work capturado con placas verticales, bordes paralelos y jerarquía completa visible; Method frontal; consola sin errores; mobile-lite conserva su composición editorial sin WebGL.
