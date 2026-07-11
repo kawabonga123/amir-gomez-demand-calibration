@@ -318,3 +318,15 @@ Captura real de Agus en desktop: Case context entraba como superficie opaca ante
 - La función es reversible al volver hacia arriba y se aplica a desktop/mobile sin bifurcar arquitectura.
 
 Evidencia 2048×975: último par 3.7X/5.3X completo con Case context recién entrando abajo; a `caseTop=59,75`, canvas opacity 0/hidden, heading left 122,875 px y 0 overflow. Mobile 375×812: último caso y=-55,5, cámara -55,485 con Case context a 666 px; a caseTop 50 px, canvas 0/hidden y 0 overflow. Consola limpia.
+
+## ESTABILIDAD TEMPORAL MOBILE — 2026-07-11
+
+Feedback real de Agus en teléfono: flash/strobe constante y frames choppy al bajar. No era un único cuello; había cuatro fuentes de inestabilidad temporal en low-tier.
+
+- Backdrop frosted dejó de actualizarse en frames alternados. Ahora se renderiza cada frame a 55% por eje: 30% de los píxeles originales, menos costo total y sin alternancia de refracción.
+- Cámara y glow automático dejaron de usar lerp por frame. Usan easing exponencial con `dt`, conservando duración aunque el dispositivo pierda frames.
+- Twinkle HDR de partículas se anula en low-tier; las partículas siguen moviéndose pero no encienden picos que el bloom amplifica como flashes.
+- Dashes/rings binarios del hilo pasan a luminosidad continua en low-tier. Desktop conserva sus pulsos.
+- El grano mobile queda estático: conserva textura sin saltos `steps()` a pantalla completa.
+
+Evidencia con emulación 375×812, DPR físico 3 y CPU throttle 4×: renderer DPR 1,35, canvas 506×1096, backdrop 278×603, ~134 fps del entorno automatizado, p95 7 ms, 0 overflow y 0 errores. Desktop mantiene backdrop 1440×900, 9.000 partículas y shader con twinkle/pulsos activo.

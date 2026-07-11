@@ -115,6 +115,7 @@
   /* ---- Mobile: nav compacta (4 links + brand no deben desbordar en ~375px), sin barra de
      direcciones saltando el layout (100svh ya cubre eso arriba), CTA más compacto. ---- */
   @media(max-width:640px){
+    .grain{animation:none;opacity:.035}
     nav{padding-top:max(1.15rem,calc(env(safe-area-inset-top) + .55rem));padding-bottom:1.15rem}
     nav .links{gap:1rem;align-items:center}
     /* Cinco links en 375px obligaban a targets diminutos y dejaban el header visualmente
@@ -562,7 +563,7 @@
   // Tier bajo (mobile) corre menos fps bajo carga → menos frames disponibles para que el lerp de
   // cámara alcance su target, lo que se percibe como "el scroll responde lento/con gap". Compensar
   // con un lerp más agresivo por frame (12% vs 6%) cierra la distancia en menos frames.
-  const CAM_LERP=REDUCE?1:(TIER.quality==='low'?0.12:0.08);
+  const CAM_RESPONSE=TIER.quality==='low'?7.7:5.0;
   // Work: ¿los 2 casos de cada par van lado a lado (desktop/tablet) o apilados centrados
   // (mobile angosto)? Decidido UNA vez al cargar (mismo patrón que TIER) — lado a lado necesita
   // presupuesto de frustum horizontal que un portrait angosto no tiene (ver CASES más abajo).
@@ -789,7 +790,7 @@
         // del tiempo cerca de 0, un pico angosto cerca de 1) — aAngle+aRnd desfasa cada partícula
         // para que no titilen todas juntas (se ven como destellos individuales, no un flash global).
         float twinklePhase=uTime*0.5+aRnd*62.83+aAngle*1.7;
-        vTwinkle=pow(max(0.0,sin(twinklePhase)),16.0);
+        vTwinkle=pow(max(0.0,sin(twinklePhase)),16.0)*${(TIER.quality==='low'?0:1).toFixed(1)};
         vec4 mv=modelViewMatrix*vec4(pos,1.0);
         // BUG real señalado por Agus con captura (pixelado extremo tras subir el brillo): un pico
         // MUY chico y MUY brillante, agrandado 1.9x, es lo peor posible para el bloom de mip-chain
@@ -1222,7 +1223,11 @@
   // ---- Backdrop compartido: 1 render extra por frame (sin las placas) que TODAS samplean ----
   let bgRT=new THREE.WebGLRenderTarget(2,2,{depthBuffer:false});
   function resizeBgRT(){
-    const w=canvas.width||2, h=canvas.height||2;
+    // Mobile: refracción cada frame a 55% por eje (30% de los píxeles), más barata y estable
+    // que actualizar un frame sí y otro no a resolución completa.
+    const backdropScale=TIER.quality==='low'?.55:1;
+    const w=Math.max(2,Math.round((canvas.width||2)*backdropScale));
+    const h=Math.max(2,Math.round((canvas.height||2)*backdropScale));
     if(bgRT.width!==w||bgRT.height!==h){ bgRT.setSize(w,h);
       plateMaterials.forEach(m=>{ if(m.userData.shader) m.userData.shader.uniforms.uResolution.value.set(w,h); }); }
   }
@@ -1247,8 +1252,8 @@
     fragmentShader:`
       uniform float uTime,uReadFocus; varying vec2 vUv;
       void main(){
-        float dash=step(0.5,fract(vUv.x*46.0-uTime*1.4));           // pulsos que corren hacia abajo (el flujo de señal)
-        float ring=step(0.82,fract(vUv.y*5.0+uTime*0.15));           // anillos de "circuito" alrededor del tubo
+        float dash=mix(0.38,step(0.5,fract(vUv.x*46.0-uTime*1.4)),${(TIER.quality==='low'?0:1).toFixed(1)});
+        float ring=mix(0.10,step(0.82,fract(vUv.y*5.0+uTime*0.15)),${(TIER.quality==='low'?0:1).toFixed(1)});
         float base=0.28;
         float e=base+dash*0.55+ring*0.3;
         vec3 col=mix(vec3(0.85,0.38,0.16),vec3(1.0,0.78,0.58),dash*0.7+ring*0.4);  // naranja de marca (antes cian)
@@ -1538,7 +1543,10 @@
       }
     } else { uniforms.uOrder.value=0.32; camera.position.set(0,0.8,9*aspectZScale()); camLook.set(0,0,0); }
   }
-  function render(){
+  let lastRenderMs=performance.now();
+  function render(now=performance.now()){
+    const dt=Math.min(.05,Math.max(.001,(now-lastRenderMs)*.001));lastRenderMs=now;
+    const cameraEase=REDUCE?1:1-Math.exp(-CAM_RESPONSE*dt);
     const t=REDUCE?0:clock.getElapsedTime();
     uniforms.uTime.value=t; uniforms.uForce.value*=0.94;
     threadUniforms.uTime.value=t;
@@ -1548,10 +1556,10 @@
     // alcanzar el scroll actual, sintiéndose como si "el scroll no respondiera" o fuera lento,
     // aunque el scroll nativo del OS sea normal. Fix: lerp más agresivo en tier bajo — compensa
     // teniendo MENOS frames disponibles con un salto más grande por frame.
-    camera.position.y+=(camTargetY-camera.position.y)*CAM_LERP;
-    camera.position.z+=(camTargetZ-camera.position.z)*CAM_LERP;
-    camera.position.x+=((progress<0.14?pointerX*1.4:0)-camera.position.x)*CAM_LERP;
-    camLook.y+=(camLookTargetY-camLook.y)*CAM_LERP;
+    camera.position.y+=(camTargetY-camera.position.y)*cameraEase;
+    camera.position.z+=(camTargetZ-camera.position.z)*cameraEase;
+    camera.position.x+=((progress<0.14?pointerX*1.4:0)-camera.position.x)*cameraEase;
+    camLook.y+=(camLookTargetY-camLook.y)*cameraEase;
     camera.lookAt(camLook);
     // los diales de PROOF giran lentamente (pedido de Agus) — solo el sub-group ring+ticks+aguja,
     // el número queda quieto y derecho (ver comentario en cloudGroups).
@@ -1569,19 +1577,18 @@
     // full — rompiendo el focus por proximidad que acabamos de aplicar.
     plates.forEach((p,i)=>{
       const target=TOUCH ? stageProximity[i]*0.55 : ((p===hoveredPlate)?stageProximity[i]:0);
-      p.material.userData.uHover.value+=(target-p.material.userData.uHover.value)*0.15; });
+      p.material.userData.uHover.value+=(target-p.material.userData.uHover.value)*cameraEase; });
     casePlates.forEach((p,i)=>{
       const target=TOUCH ? caseProximity[i]*0.55 : ((p===hoveredPlate)?caseProximity[i]:0);
-      p.material.userData.uHover.value+=(target-p.material.userData.uHover.value)*0.15; });
-    // En tier bajo el backdrop se actualiza frame por medio: mantiene la refraccion viva y corta
-    // aproximadamente a la mitad su pase extra mas caro.
+      p.material.userData.uHover.value+=(target-p.material.userData.uHover.value)*cameraEase; });
+    // Backdrop cada frame. En low-tier su render target reducido evita alternancia visual y baja GPU.
     if(mainCanvasActive){
-      if(TIER.quality!=='low'||frames%2===0) renderBackdrop();
+      renderBackdrop();
       composer.render();
     }
     frames++;
     // Reduced motion conserva el recorrido espacial pero sin deriva, spin ni twinkle; el canvas
-    // solo refresca a baja frecuencia y responde inmediatamente al scroll por CAM_LERP=1.
+    // solo refresca a baja frecuencia y responde inmediatamente al scroll.
     if(REDUCE) setTimeout(()=>requestAnimationFrame(render),100);
     else requestAnimationFrame(render);
   }
@@ -1605,7 +1612,7 @@
   } else render();
   if(params.has('debug')) window.__amirDebug={camera,plates,casePlates,cloudGroups,STAGES,CASES,CASE_PAIRS,CLOUD_STATS,PAIR_SIDE,aspectZScale,TIER,TOUCH,
     updateFromScroll,methodEl,workEl,heroEl,camLook,get progress(){return progress},get camTargetY(){return camTargetY},
-    get camTargetZ(){return camTargetZ},get uOrder(){return uniforms.uOrder.value}}; // solo verificación
+    get camTargetZ(){return camTargetZ},get uOrder(){return uniforms.uOrder.value},get backdropSize(){return [bgRT.width,bgRT.height]}}; // solo verificación
   console.log('[amir] hero + método + work listo ·',N,'partículas ·',STAGES.length,'placas method ·',CASES.length,'placas work');
   </script>
   <script>
