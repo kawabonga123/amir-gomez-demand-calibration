@@ -223,17 +223,17 @@
           <p>margin closed from just $2,744 in ad spend — one webinar funnel, still live.</p>
         </div>
         <div class="stage-copy cloud-copy">
-          <span class="mono panel-eyebrow">Proof, not promises</span>
+          <span class="mono panel-eyebrow" aria-hidden="true">Proof, not promises</span>
           <h2 class="sr-only">10× lower cost per lead.</h2>
           <p>lower cost per qualified lead — from $50 down to $5.</p>
         </div>
         <div class="stage-copy cloud-copy">
-          <span class="mono panel-eyebrow">Proof, not promises</span>
+          <span class="mono panel-eyebrow" aria-hidden="true">Proof, not promises</span>
           <h2 class="sr-only">7× ROAS.</h2>
           <p>ROAS after scaling UGC + AI creative — up from 2×.</p>
         </div>
         <div class="stage-copy cloud-copy">
-          <span class="mono panel-eyebrow">Proof, not promises</span>
+          <span class="mono panel-eyebrow" aria-hidden="true">Proof, not promises</span>
           <h2 class="sr-only">63,000 leads.</h2>
           <p>leads generated at $4.5 average cost — a single social funnel.</p>
         </div>
@@ -276,13 +276,13 @@
           <span class="mono panel-eyebrow">Close &amp; Convert</span>
           <span class="mono case-name">Webinar + VSL</span>
           <h2 class="sr-only">$1M+ in margin from $2,744 in ad spend.</h2>
-          <p>B2B and B2C lending funnel with on-demand webinars. 5 deals closed, campaign still live.</p>
+          <p>B2B and B2C lending funnel with on-demand webinars — 5 deals closed straight from that single campaign.</p>
         </div>
         <div class="stage-copy case-copy">
           <span class="mono panel-eyebrow">Close &amp; Convert</span>
           <span class="mono case-name">Lead Magnet B2B</span>
           <h2 class="sr-only">10× lower cost per lead.</h2>
-          <p>Full funnel incl. the lead magnet. Ads varied up to 12× more often — cost per ICP lead cut from $50 to $5.</p>
+          <p>Full funnel built end to end, lead magnet included — creative varied up to 12× more often, driving cost per lead down.</p>
         </div>
       </div>
       <div class="stage" data-pair="1">
@@ -290,13 +290,13 @@
           <span class="mono panel-eyebrow">Creative &amp; Volume</span>
           <span class="mono case-name">UGC + AI</span>
           <h2 class="sr-only">7× ROAS, up from 2×.</h2>
-          <p>20× more UGC volume than the existing creative, for a US legal company.</p>
+          <p>20× more UGC volume than the existing creative, for a US legal company — AI-assisted production made the scale-up possible.</p>
         </div>
         <div class="stage-copy case-copy">
           <span class="mono panel-eyebrow">Creative &amp; Volume</span>
           <span class="mono case-name">LeadGen B2C</span>
           <h2 class="sr-only">63,000 leads at $4.5 average cost.</h2>
-          <p>$335K/yr social campaign for a home-decor leader, full funnel built end to end.</p>
+          <p>$335K/yr social campaign for a home-decor leader, built and scaled end to end.</p>
         </div>
       </div>
       <div class="stage" data-pair="2">
@@ -322,7 +322,11 @@
           <img src="assets/amir.jpg" alt="Amir Gómez" width="640" height="640">
           <h3>Amir Gómez</h3>
           <span class="mono role">Growth Lead</span>
-          <p>10 years in online marketing, 300+ successful B2B and B2C funnels — leading high-performance growth teams across multiple countries.</p>
+          <!-- BUG DE COPY real (auditoría de redundancia, Fase 6): esta bio repetía "10 years,
+               300+ funnels" casi palabra por palabra del subtítulo del Hero, un par de pantallas
+               antes. Fix: la bio profundiza en CÓMO lidera (rol/cultura del equipo), no repite
+               la credencial ya establecida — el dato no se pierde, solo no se dice dos veces. -->
+          <p>Sets the strategy, runs point on every account, and holds the team accountable to one thing: revenue moved, not hours logged.</p>
         </div>
         <div class="member">
           <img src="assets/maia.jpg" alt="Maia Gaitán" width="640" height="640">
@@ -491,15 +495,19 @@
   const CASE_PAIRS=[
     { theme:'Close & Convert', cases:[
       {color:0xf0611f, hook:'$1M+', name:'Webinar + VSL',
-        caption:'B2B and B2C lending funnel with on-demand webinars. 5 deals closed for $1M+ in margin — from just $2,744 spent. Campaign still live.'},
+        // BUG DE COPY real (auditoría de redundancia, Fase 6 del plan): esta caption repetía
+        // "$2,744"/"still live" — el MISMO stat que ya está en Signal Cloud, unas pantallas antes.
+        // Fix: la caption de Work cuenta el CÓMO/mecanismo (webinars, 5 deals), el número grande
+        // queda solo en Signal como teaser — sin restar información, sin decir lo mismo dos veces.
+        caption:'B2B and B2C lending funnel with on-demand webinars — 5 deals closed straight from that single campaign.'},
       {color:0xf0611f, hook:'10X', name:'Lead Magnet B2B',
-        caption:'Full funnel built end to end, lead magnet included. Ads varied up to 12× more often — cost per ICP lead cut from $50 to $5.'},
+        caption:'Full funnel built end to end, lead magnet included — creative varied up to 12× more often, driving cost per lead down.'},
     ]},
     { theme:'Creative & Volume', cases:[
       {color:0xff7a3d, hook:'7X', name:'UGC + AI',
-        caption:'20× more UGC volume than the existing creative, for a US legal company. ROAS climbed from 2× to 7×.'},
+        caption:'20× more UGC volume than the existing creative, for a US legal company — AI-assisted production made the scale-up possible.'},
       {color:0xff7a3d, hook:'63K', name:'LeadGen B2C',
-        caption:'Full-funnel $335K/yr social campaign for a home-decor leader. 63,000+ leads at $4.5 average cost.'},
+        caption:'$335K/yr social campaign for a home-decor leader, built and scaled end to end.'},
     ]},
     { theme:'Channel Mastery', cases:[
       {color:0xff9a68, hook:'3.7X', name:'PPC B2B',
