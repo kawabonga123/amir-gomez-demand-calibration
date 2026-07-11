@@ -176,6 +176,7 @@
      pantallas): 80→70svh (valor del plan), apilado 120→105svh proporcional. ---- */
   #work .stage{min-height:52svh}
   body.pairs-stack #work .stage{min-height:96svh}
+  @media(min-width:821px){#work{padding-bottom:14svh}}
 
   /* ---- Team: DOM puro, sin 3D (el eje ya terminó en Work) — Amir protagonista (columna más ancha) ---- */
   /* BUG P0 real, visto con captura de Chrome (auditoría /taste): Team/Services se dibujaban
@@ -243,7 +244,14 @@
   body.tail-active .contact h2{transform:translate3d(var(--liquid-dx,0px),var(--liquid-dy,0px),0)}
   .team-eyebrow,.services-eyebrow,.contact-eyebrow,.contact h2{will-change:transform}
 
-  .case-library{padding:4rem 6vw;position:relative;z-index:4;background:var(--bg)}
+  .case-library{padding:4rem 6vw;position:relative;z-index:4;background:var(--bg);
+    box-shadow:0 -38px 90px rgba(5,6,8,.82)}
+  .case-library::before,.case-library::after{content:'';position:absolute;z-index:0;left:0;width:100%;pointer-events:none;background-position:center;background-size:100% 100%;background-repeat:no-repeat}
+  .case-library::before{height:clamp(72px,9vw,132px);top:clamp(-132px,-9vw,-72px);
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1600 120' preserveAspectRatio='none'%3E%3Cpath d='M0 78 C180 42 330 98 520 64 S860 26 1040 64 S1370 104 1600 52 L1600 120 L0 120 Z' fill='%23050608'/%3E%3C/svg%3E")}
+  .case-library::after{height:clamp(76px,9vw,136px);top:clamp(-136px,-9vw,-76px);opacity:.55;filter:drop-shadow(0 -9px 18px rgba(255,106,43,.18));
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1600 120' preserveAspectRatio='none'%3E%3Cpath d='M0 78 C180 42 330 98 520 64 S860 26 1040 64 S1370 104 1600 52' fill='none' stroke='%23ff8d5b' stroke-opacity='.24' stroke-width='1.5'/%3E%3C/svg%3E")}
+  .case-library>*{position:relative;z-index:1}
   .case-library-head{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,.65fr);gap:2rem;align-items:end;max-width:1100px;margin-bottom:2.4rem}
   .case-library h2{font-size:clamp(2.1rem,4vw,3.6rem);line-height:1;letter-spacing:-.03em;max-width:14ch}
   .case-library-head p{color:#c4ccc9;line-height:1.6;max-width:42ch}
@@ -1401,9 +1409,17 @@
     }else{
       // El último caso debe llegar al centro ANTES de que Case context entre a taparlo. Mapear
       // hasta el bottom físico de Work lo enfocaba recién cuando el bloque opaco ya estaba arriba.
-      const workReadableEnd=journeyBottom-innerHeight*.82;
-      const p=Math.max(0,Math.min(1,(scrollY-workTop)/Math.max(1,workReadableEnd-workTop)));
-      camLookTargetY=lerp(METHOD_Y_END, lastPlateY, p);
+      const workReadableEnd=journeyBottom-innerHeight*.90;
+      const workExitEnd=journeyBottom-innerHeight*.60;
+      if(scrollY<=workReadableEnd){
+        const p=Math.max(0,Math.min(1,(scrollY-workTop)/Math.max(1,workReadableEnd-workTop)));
+        camLookTargetY=lerp(METHOD_Y_END,lastPlateY,p);
+      }else{
+        // Release espacial: después de leer el último par, la cámara sigue 5 unidades y lo hace
+        // salir por arriba antes de que la superficie orgánica de Case context cruce su cuerpo.
+        const exitP=Math.max(0,Math.min(1,(scrollY-workReadableEnd)/Math.max(1,workExitEnd-workReadableEnd)));
+        camLookTargetY=lerp(lastPlateY,lastPlateY-5,exitP);
+      }
     }
     // Casi frontal: 0.32 unidades de desnivel sobre Z=5.2 equivalen a ~3.5°, suficiente para
     // percibir espesor/material sin comprimir la tipografía. En Hero se conserva la pose original.

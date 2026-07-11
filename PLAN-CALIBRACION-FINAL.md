@@ -330,3 +330,15 @@ Feedback real de Agus en teléfono: flash/strobe constante y frames choppy al ba
 - El grano mobile queda estático: conserva textura sin saltos `steps()` a pantalla completa.
 
 Evidencia con emulación 375×812, DPR físico 3 y CPU throttle 4×: renderer DPR 1,35, canvas 506×1096, backdrop 278×603, ~134 fps del entorno automatizado, p95 7 ms, 0 overflow y 0 errores. Desktop mantiene backdrop 1440×900, 9.000 partículas y shader con twinkle/pulsos activo.
+
+## RELEASE ORGÁNICO ENTRE WORK Y CASE CONTEXT — 2026-07-11
+
+Feedback real de Agus: con scroll normal el último par de Work seguía siendo cortado por Case context, y el límite recto/negro se sentía como un corte duro sin profundidad.
+
+- Desktop suma `14svh` de recorrido inferior para que el contenido tenga una fase de salida propia.
+- El último par llega a su pose legible antes (`workReadableEnd = 0,90 viewport`) y luego la cámara avanza 5 unidades hasta `workExitEnd = 0,60 viewport`; así las placas abandonan el encuadre antes de que entre el bloque siguiente incluso con scroll rápido.
+- Case context ahora entra como una superficie elevada: sombra superior amplia, relleno SVG negro con silueta orgánica y un borde cálido curvo con glow muy contenido.
+- La frontera no es perfectamente recta y el SVG es vectorial/code-native: no suma dependencias, texturas ni costo de WebGL.
+- Mobile usa la misma transición, reescalada por `clamp()`, sin bifurcar contenido ni arquitectura.
+
+Evidencia local: desktop 2048×975, con el último par ya fuera antes de que Case context cubra el cuerpo; mobile 375×812, curva completa, título visible y sin superposición. Consola limpia en ambos viewports.
