@@ -250,7 +250,7 @@
 
   body.tail-active .team-eyebrow,body.tail-active .services-eyebrow,body.tail-active .contact-eyebrow,
   body.tail-active .contact h2{transform:translate3d(var(--liquid-dx,0px),var(--liquid-dy,0px),0)}
-  .team-eyebrow,.services-eyebrow,.contact-eyebrow,.contact h2{transition:transform .18s linear}
+  .team-eyebrow,.services-eyebrow,.contact-eyebrow,.contact h2{will-change:transform}
 
   .case-library{padding:4rem 6vw;position:relative;z-index:4;background:var(--bg)}
   .case-library-head{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,.65fr);gap:2rem;align-items:end;max-width:1100px;margin-bottom:2.4rem}
@@ -1625,8 +1625,8 @@
     if(!canvas||!startEl||!footer) return;
     const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
     let gl,program,buffer,uniforms,initialized=false,running=false,active=false;
-    let pointerX=.5,pointerY=.5,targetX=.5,targetY=.5,lastPointerX=.5,lastPointerY=.5;
-    let pointerVX=0,pointerVY=0,pointerImpulse=0,lastPointerTime=performance.now();
+    let pointerX=.5,pointerY=.5,targetX=.5,targetY=.5,pointerVX=0,pointerVY=0,pointerImpulse=0;
+    let textDX=0,textDY=0,targetTextDX=0,targetTextDY=0;
     let lastScroll=scrollY,scrollVelocity=0,scrollImpulse=0,lastFrame=0;
 
     function shader(type,source){
@@ -1695,10 +1695,29 @@
     }
     function draw(now){
       if(!active){running=false;return;}
-      running=true;lastFrame=now;
-      pointerX+=(targetX-pointerX)*.16;pointerY+=(targetY-pointerY)*.16;
-      pointerVX*=.91;pointerVY*=.91;pointerImpulse*=.935;
-      scrollVelocity*=.88;scrollImpulse*=.93;
+      running=true;
+      const dt=Math.min(.05,Math.max(.008,lastFrame?(now-lastFrame)*.001:.016));lastFrame=now;
+      const previousX=pointerX,previousY=pointerY;
+      // Seguimiento temporal, no por evento/frame: ~450 ms para asentarse, igual en mouse de
+      // 125 Hz, trackpad o monitor de 60/144 Hz. La posición nunca salta al input crudo.
+      const positionEase=1-Math.exp(-dt*6.5);
+      pointerX+=(targetX-pointerX)*positionEase;pointerY+=(targetY-pointerY)*positionEase;
+      const rawVX=(pointerX-previousX)/dt,rawVY=(pointerY-previousY)/dt;
+      const velocityEase=1-Math.exp(-dt*9);
+      pointerVX+=(rawVX-pointerVX)*velocityEase;pointerVY+=(rawVY-pointerVY)*velocityEase;
+      // Curva de energía con ataque corto y release largo: responde, pero no parpadea entre
+      // eventos. El impulso depende de velocidad física por segundo, no de cuántos eventos llegan.
+      const energyTarget=Math.min(1.15,Math.hypot(rawVX,rawVY)*.34);
+      const energyEase=1-Math.exp(-dt*(energyTarget>pointerImpulse?7.5:2.2));
+      pointerImpulse+=(energyTarget-pointerImpulse)*energyEase;
+      scrollVelocity*=Math.exp(-dt*7.7);scrollImpulse*=Math.exp(-dt*4.4);
+      const textEase=1-Math.exp(-dt*5.8);
+      textDX+=(targetTextDX-textDX)*textEase;
+      textDY+=(targetTextDY+Math.max(-1.2,Math.min(1.2,scrollVelocity*.016))-textDY)*textEase;
+      document.body.style.setProperty('--liquid-dx',textDX.toFixed(2)+'px');
+      document.body.style.setProperty('--liquid-dy',textDY.toFixed(2)+'px');
+      document.body.style.setProperty('--liquid-px',(pointerX*100).toFixed(1)+'%');
+      document.body.style.setProperty('--liquid-py',((1-pointerY)*100).toFixed(1)+'%');
       gl.useProgram(program);
       gl.uniform2f(uniforms.r,canvas.width,canvas.height);
       gl.uniform2f(uniforms.m,pointerX,pointerY);
@@ -1722,15 +1741,8 @@
       scrollImpulse=Math.min(1,scrollImpulse+Math.abs(delta)*.006);lastScroll=next;updateActive();
     },{passive:true});
     addEventListener('mousemove',event=>{
-      const now=performance.now(),dt=Math.max(8,now-lastPointerTime);
       targetX=event.clientX/innerWidth;targetY=1-event.clientY/innerHeight;
-      pointerVX=(targetX-lastPointerX)*Math.min(3,32/dt);pointerVY=(targetY-lastPointerY)*Math.min(3,32/dt);
-      pointerImpulse=Math.min(1.5,pointerImpulse+Math.hypot(pointerVX,pointerVY)*5.5+.08);
-      lastPointerX=targetX;lastPointerY=targetY;lastPointerTime=now;
-      const dx=((targetX-.5)*2.4).toFixed(2)+'px';
-      const dy=((.5-targetY)*1.8+Math.max(-1.2,Math.min(1.2,scrollVelocity*.016))).toFixed(2)+'px';
-      document.body.style.setProperty('--liquid-dx',dx);document.body.style.setProperty('--liquid-dy',dy);
-      document.body.style.setProperty('--liquid-px',(targetX*100).toFixed(1)+'%');document.body.style.setProperty('--liquid-py',((1-targetY)*100).toFixed(1)+'%');
+      targetTextDX=(targetX-.5)*2.4;targetTextDY=(.5-targetY)*1.8;
     },{passive:true});
     addEventListener('resize',()=>{resize();updateActive()});
     updateActive();

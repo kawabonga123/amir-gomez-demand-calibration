@@ -252,3 +252,15 @@ Una captura real de Agus mostró las últimas placas 3D atravesando Services deb
 - La corriente inferior sigue activa de manera independiente; Services muestra líquido, nunca placas anteriores.
 
 Validación a 1727×947 con scroll rápido: Case context limpio; Services con corriente líquida solamente; canvas principal en opacity 0 + hidden; consola sin errores.
+
+## CURVA TEMPORAL DEL LÍQUIDO — 2026-07-11
+
+Feedback real de Agus: el mouse inferior era hipersensible y choppy, sin curva ni duración perceptible. La causa era doble: posición/dirección se calculaban directamente en cada `mousemove`, y el impulso sumaba energía por evento, haciendo que el resultado dependiera del polling rate del mouse.
+
+- `mousemove` ahora sólo actualiza un objetivo; nunca toca el shader ni el DOM directamente.
+- Posición, velocidad y microdesplazamiento se interpolan con easing exponencial basado en tiempo real (`dt`), independiente de FPS y frecuencia del dispositivo.
+- La energía usa ataque corto (respuesta) y release largo (inercia), en vez de encenderse/apagarse por evento.
+- Se eliminó la transición CSS lineal que competía con el loop físico y reiniciaba en cada frame.
+- Scroll velocity e impulse también decaen por tiempo real, no por cantidad de frames.
+
+Validación Playwright a 1440×900: ante un salto amplio, `--liquid-dx` recorrió -0,81 → -0,24 → 0,16 → 0,62 → 0,89 → 1,00 px entre 0 y 550 ms, confirmando una curva continua con valores intermedios; consola sin errores.
