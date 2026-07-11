@@ -292,3 +292,18 @@ Corrección urgente de dirección: Agus rechazó que mobile mostrara un sitio ed
 - `wrapText()` usa métricas reales del typeface en vez de construir geometrías temporales por palabra. TBT Lighthouse bajó 4.320→2.540 ms sin cambiar texto final.
 
 Evidencia local real: 375×812 muestra Hero WebGL, cuatro diales, tres placas Method, seis casos y Team con líquido; `mobileLite:false`, `webgl:true`, 3/6 objetos, 0 overflow, 0 errores. 375×667 conserva Hero completo. Desktop 1440×900 mantiene tier high, 9.000 partículas, pares laterales y 0 overflow. Lighthouse mobile: Performance 68, Accessibility 100, Best Practices 100, SEO 100, LCP 2,2 s, TBT 2.540 ms.
+
+## AUDITORÍA POST-UNIFICACIÓN — 2026-07-11
+
+Auditoría mobile-first con Innovatron, UI/UX Pro Max y el criterio de Agus. Hallazgo principal: la arquitectura ya era la misma, pero Evidence intentaba mostrar cuatro diales simultáneos en 375 px; entraban completos, aunque captions y navegación quedaban demasiado pequeños para lectura cómoda.
+
+- Portrait conserva los mismos cuatro diales WebGL, pero los recorre uno por uno sobre el mismo eje. No existe HTML alternativo ni escena distinta.
+- Signal portrait pasa a 220svh: aproximadamente media pantalla de lectura por resultado, sin huecos entre objetos.
+- Aproximación al primer dial 25%→8%; desaparece el tramo inicial donde sólo se veía el eje.
+- Diales portrait a escala 1,2; hook 0,44, label 0,11 y cuerpo 0,12, con focus de 2,5 unidades para evitar vecinos compitiendo.
+- Method portrait baja a Y -24/-29/-34 para conservar separación física después de los cuatro diales. Desktop mantiene exactamente -15/-20/-25 y su constelación 2×2 original.
+- Navegación 375 px 0,54→0,60rem, targets de 44 px intactos y padding superior sensible al safe area/notch.
+- Work conserva seis casos secuenciales sin superposición; Case context tiene summaries de 74 px, contenido abierto legible y canvas principal físicamente oculto.
+- Reduced motion comprobado: cámara 0→-23,25 después del scroll, WebGL activo y 0 overflow. Landscape 812×375 funcional.
+
+Evidencia final: 375×812, 375×667, 812×375 y 1440×900; 0 overflow y 0 errores. Desktop conserva 9.000 partículas, 3 Method, 6 Work y coordenadas originales. Lighthouse mobile: Performance 71, Accessibility 100, Best Practices 100, SEO 100; LCP 1,3 s, CLS 0,001, TBT 2.680 ms. Scroll bajo throttle CPU 4× medido por encima de 60 fps en el entorno automatizado.

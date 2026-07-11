@@ -115,7 +115,7 @@
   /* ---- Mobile: nav compacta (4 links + brand no deben desbordar en ~375px), sin barra de
      direcciones saltando el layout (100svh ya cubre eso arriba), CTA más compacto. ---- */
   @media(max-width:640px){
-    nav{padding-top:1.15rem;padding-bottom:1.15rem}
+    nav{padding-top:max(1.15rem,calc(env(safe-area-inset-top) + .55rem));padding-bottom:1.15rem}
     nav .links{gap:1rem;align-items:center}
     /* Cinco links en 375px obligaban a targets diminutos y dejaban el header visualmente
        apretado. En mobile quedan los tres destinos que resumen el recorrido completo; Method y
@@ -130,10 +130,11 @@
     /* En una pantalla angosta el cue fijo compite con la primera constelacion 3D. El CTA y la
        continuidad vertical ya dan el affordance de scroll; ocultarlo es mas claro que apilarlo. */
     .scroll-cue{display:none}
+    #signal .stage{min-height:220svh!important}
   }
   @media(max-width:380px){
-    nav .links{gap:.6rem}
-    nav .links a{font-size:.54rem;letter-spacing:.05em}
+    nav .links{gap:.55rem}
+    nav .links a{font-size:.6rem;letter-spacing:.03em}
   }
 
   /* ---- Método: el TÍTULO y el CAPTION son AMBOS geometría 3D, hijos de la MISMA placa (ver JS,
@@ -606,6 +607,9 @@
     {hook:'7X',   label:'Creative scaling', color:0xff6a2b, dx:-1.4, dy:-2.0,  caption:'ROAS after scaling UGC + AI creative — up from 2×.'},
     {hook:'63K',  label:'Lead volume', color:0xff7a3d, dx: 2.0, dy:-2.0,  caption:'leads generated at $4.5 average cost — a single social funnel.'},
   ].map(s=>Object.assign({},s,{x:s.dx, y:CLOUD_Y+s.dy}));
+  // En portrait no se miniaturizan cuatro diales en una grilla: recorren el mismo eje uno por
+  // uno, con escala de lectura real. Es la misma escena y contenido, recompuestos para el ancho.
+  if(!PAIR_SIDE) CLOUD_STATS.forEach((s,i)=>{s.x=0;s.y=CLOUD_Y+1.2-i*3.8});
 
   // 5→3 pasos (fusionados): feedback de Agus, "demasiadas placas, demasiada distancia" — 2 pasos
   // cortos que compartían el mismo espíritu (descubrir+crear, ejecutar+medir) pasan a ser uno solo.
@@ -620,11 +624,11 @@
   // el mismo rango de Y. Shift de -3 a las 3 etapas (y todo lo que cuelga de STAGES.at(-1), como
   // CASES/hilo, más abajo) para dejar un gap limpio de ~1.75 unidades.
   const STAGES=[
-    {y:-15, x:-0.7, color:0x6b645c, lines:['UNDERSTAND','& CREATE'], step:'Step 01',
+    {y:PAIR_SIDE?-15:-24, x:-0.7, color:0x6b645c, lines:['UNDERSTAND','& CREATE'], step:'Step 01',
       caption:'Deep discovery on the business model, audience and funnel assets, then creative built at volume — ads varied up to 12× more often than standard, always on-brand.'},
-    {y:-20, x: 0.7, color:0xe8551e, lines:['SHIP &','MEASURE'], step:'Step 02',
+    {y:PAIR_SIDE?-20:-29, x: 0.7, color:0xe8551e, lines:['SHIP &','MEASURE'], step:'Step 02',
       caption:'Instrument the funnel, then ship fast. Every decision ties back to a measurable outcome, so budget only follows what moves revenue.'},
-    {y:-25, x:-0.5, color:0xff7a3d, lines:['THE SIGNAL','COMPOUNDS'], step:'Step 03',
+    {y:PAIR_SIDE?-25:-34, x:-0.5, color:0xff7a3d, lines:['THE SIGNAL','COMPOUNDS'], step:'Step 03',
       caption:'Winners earn budget; weak signals are cut. The data shows what to scale next — compounding every week the funnel keeps running.'},
   ];
   // ---- Work: 6 casos reales agrupados de a PARES por tema (mitad del scroll de 6 pantallas
@@ -1004,7 +1008,8 @@
     group.userData.spin=spin;
     group.userData.spinSpeed=0.045*(i%2===0?1:-1);   // sentido alternado por número, no todos iguales
     // Mismos diales/constelación en portrait, con apertura horizontal adaptada al frustum.
-    group.position.set(PAIR_SIDE?s.x:s.x*.78, s.y, 0);
+    group.position.set(s.x, s.y, 0);
+    if(!PAIR_SIDE) group.scale.setScalar(1.2);
     scene.add(group);
     return group;
   });
@@ -1168,7 +1173,11 @@
     CLOUD_STATS.forEach((s,i)=>{
       const group=cloudGroups[i];
       const hookMat=new THREE.MeshBasicMaterial({color:0xf2efe9, toneMapped:false, transparent:true});   // sólido, mismo criterio/razón que titleMat arriba
-      const geo=new TextGeometry(s.hook,{font,size:0.38,height:0.12,curveSegments:DISPLAY_TEXT_CURVES,
+      const cloudHookSize=PAIR_SIDE?0.38:0.44;
+      const cloudLabelSize=PAIR_SIDE?0.09:0.11;
+      const cloudBodySize=PAIR_SIDE?0.095:0.12;
+      const cloudLineHeight=PAIR_SIDE?0.13:0.16;
+      const geo=new TextGeometry(s.hook,{font,size:cloudHookSize,height:0.12,curveSegments:DISPLAY_TEXT_CURVES,
         bevelEnabled:DISPLAY_TEXT_BEVEL,bevelThickness:0.018,bevelSize:0.012,bevelSegments:3});
       geo.computeBoundingBox();
       const bb0=geo.boundingBox;
@@ -1185,9 +1194,9 @@
       // — debajo del anillo, mismo criterio que Method/Work. Tamaño compacto: el presupuesto
       // vertical hasta la placa de Method vecina ya está ajustado (ver gap de STAGES arriba),
       // 3 líneas máximo mantiene el alcance dentro de ese margen.
-      addTextLines(group, eyebrowTextMat, [s.label], 0.09, 0, -1.15, 2.0, 0.05);
-      const bodyLines=wrapText(s.caption, 0.095, 2.0);
-      addTextLines(group, bodyTextMat, bodyLines, 0.095, 0.13, -1.32, 2.0, 0.05);
+      addTextLines(group, eyebrowTextMat, [s.label], cloudLabelSize, 0, -1.15, 2.0, 0.05);
+      const bodyLines=wrapText(s.caption, cloudBodySize, 2.0);
+      addTextLines(group, bodyTextMat, bodyLines, cloudBodySize, cloudLineHeight, -1.32, 2.0, 0.05);
     });
     // Registro del focus por proximidad (P0-A): recién ACÁ existen todos los hijos (vidrio +
     // título + eyebrow + cuerpo) de cada placa/dial — registrar antes dejaría textos sin fade.
@@ -1340,7 +1349,7 @@
   // Fix SOLO para Signal: reservar nada más que un 25% de su scroll al viaje de acercamiento
   // (y=0→CLOUD_Y_START) y el 75% restante a atravesar el cluster real de diales — así los 4
   // números quedan en pantalla la mayor parte del scroll de esa sección, no comprimidos al final.
-  const CLOUD_APPROACH_FRAC=0.25;
+  const CLOUD_APPROACH_FRAC=PAIR_SIDE?0.25:0.08;
   // BUG real medido (P0-C, auditoría 2026-07-09): en mobile portrait (375×812, aspectZScale llega
   // a 2.3x → cámara MUY lejos → frustum vertical enorme, ±8.79 unidades), el frustum del Hero
   // estático llegaba hasta y=-7.99 — el dial más superficial de Signal (y=-7.8) quedaba DENTRO
@@ -1462,7 +1471,8 @@
     // La constelacion ocupa apenas ~3 unidades: /5 mantiene sus cuatro diales presentes dentro de
     // Signal, pero los retira antes de que Method entre al centro. El rango anterior (/8) dejaba
     // captions de Results todavia legibles encima de la primera placa en mobile.
-    for(let i=0;i<CLOUD_STATS.length;i++) cloudProximity[i]=Math.max(0,Math.min(1,1-Math.abs(camLook.y-CLOUD_STATS[i].y)/5));
+    const cloudRange=PAIR_SIDE?5:2.5;
+    for(let i=0;i<CLOUD_STATS.length;i++) cloudProximity[i]=Math.max(0,Math.min(1,1-Math.abs(camLook.y-CLOUD_STATS[i].y)/cloudRange));
   }
   // ---- Focus por proximidad (P0-A de la auditoría 2026-07-09, la queja MÁS repetida de Agus:
   // "se sobreponen las placas", "no se llega a leer") ----
