@@ -17,16 +17,6 @@
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" onload="this.onload=null;this.rel='stylesheet'">
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap"></noscript>
-<script>
-  (()=>{
-    const isLite=()=>matchMedia('(max-width:640px), (max-height:500px) and (pointer:coarse)').matches;
-    if(isLite()) document.documentElement.classList.add('mobile-lite','webgl-ready');
-    let resizeTimer;
-    addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>{
-      if(isLite()!==document.documentElement.classList.contains('mobile-lite')) location.reload();
-    },180)});
-  })();
-</script>
 <!--
   A+ GROWTH (Amir Gómez, Growth Lead) — sitio construido con Innovatron desde el concepto.
   Concepto: la demanda entra caótica, A+ Growth la calibra en señal limpia.
@@ -51,7 +41,6 @@
   #gl{position:fixed;inset:0;z-index:0;display:block}
   #tail-liquid{position:fixed;inset:0;z-index:1;display:block;width:100%;height:100%;pointer-events:none;opacity:0;
     transition:opacity .8s var(--ease)}
-  #mobile-flow{display:none;position:fixed;inset:0;z-index:1;width:100%;height:100%;pointer-events:none}
   body.tail-active #tail-liquid{opacity:1}
   /* scrim: oscurece la izquierda (donde vive el texto) para legibilidad, sin tapar el efecto */
   .scrim{position:fixed;inset:0;z-index:1;pointer-events:none;
@@ -157,27 +146,17 @@
   .stage{min-height:100vh;min-height:100svh}
   .stage-copy{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
     clip:rect(0,0,0,0);white-space:nowrap;border:0}
-  html:is(.webgl-failed,.mobile-lite) #gl,html:is(.webgl-failed,.mobile-lite) .scrim{display:none}
-  html:is(.webgl-failed,.mobile-lite) .stage{min-height:auto!important}
-  html:is(.webgl-failed,.mobile-lite) .stage-copy{position:relative;width:auto;height:auto;margin:1rem 6vw;padding:1.45rem 1.3rem;overflow:visible;
+  html.webgl-failed #gl,html.webgl-failed .scrim{display:none}
+  html.webgl-failed .stage{min-height:auto!important}
+  html.webgl-failed .stage-copy{position:relative;width:auto;height:auto;margin:1rem 6vw;padding:1.45rem 1.3rem;overflow:visible;
     clip:auto;white-space:normal;border:1px solid rgba(242,239,233,.16);border-radius:18px;
     background:linear-gradient(145deg,rgba(255,106,43,.11),rgba(22,20,20,.78) 38%,rgba(9,10,12,.88));
     box-shadow:inset 0 1px rgba(255,255,255,.08),0 18px 50px rgba(0,0,0,.22)}
-  html.mobile-lite .stage-copy::after{content:'';position:absolute;right:1rem;top:1rem;width:9px;height:9px;border:1px solid var(--brand);border-radius:50%;
-    box-shadow:0 0 0 5px rgba(255,106,43,.08),0 0 18px rgba(255,106,43,.65);animation:mobilePulse 2.8s ease-in-out infinite}
-  html:is(.webgl-failed,.mobile-lite) .stage-copy .sr-only{position:static;width:auto;height:auto;margin:0;overflow:visible;clip:auto;white-space:normal}
-  html:is(.webgl-failed,.mobile-lite) .stage-copy h2{font-size:clamp(1.65rem,8vw,2.35rem);line-height:1;margin:.65rem 0}
-  html:is(.webgl-failed,.mobile-lite) .stage-copy p{color:#c4ccc9;line-height:1.55;max-width:38ch}
-  html:is(.webgl-failed,.mobile-lite) .stage-copy .case-name{display:block;margin-top:.35rem;color:var(--fg)}
-  html:is(.webgl-failed,.mobile-lite) #signal,html:is(.webgl-failed,.mobile-lite) #method,
-  html:is(.webgl-failed,.mobile-lite) #work{padding:4.5rem 0 1.5rem;background:var(--bg)}
-  html.mobile-lite #signal,html.mobile-lite #method,html.mobile-lite #work{background:transparent}
-  html.mobile-lite body::before{content:'';position:fixed;z-index:0;top:0;bottom:0;left:78%;width:1px;pointer-events:none;
-    background:linear-gradient(transparent,var(--brand) 18%,var(--brand) 82%,transparent);box-shadow:0 0 26px rgba(255,106,43,.35);opacity:.6}
-  html.mobile-lite #mobile-flow{display:block}
-  html.mobile-lite.motion-ready .mobile-reveal{opacity:0;transform:translate3d(0,28px,0) scale(.985)}
-  html.mobile-lite.motion-ready .mobile-reveal.is-visible{opacity:1;transform:none;transition:opacity .7s var(--ease),transform .7s var(--ease)}
-  @keyframes mobilePulse{0%,100%{transform:scale(.75);opacity:.45}50%{transform:scale(1.25);opacity:1}}
+  html.webgl-failed .stage-copy .sr-only{position:static;width:auto;height:auto;margin:0;overflow:visible;clip:auto;white-space:normal}
+  html.webgl-failed .stage-copy h2{font-size:clamp(1.65rem,8vw,2.35rem);line-height:1;margin:.65rem 0}
+  html.webgl-failed .stage-copy p{color:#c4ccc9;line-height:1.55;max-width:38ch}
+  html.webgl-failed .stage-copy .case-name{display:block;margin-top:.35rem;color:var(--fg)}
+  html.webgl-failed #signal,html.webgl-failed #method,html.webgl-failed #work{padding:4.5rem 0 1.5rem;background:var(--bg)}
 
   /* ---- Signal Cloud: los 4 números más fuertes en un objeto 3D distinto (dial de calibración,
      no una placa más) — antes de Method. ---- */
@@ -194,7 +173,7 @@
      del par se apilan centradas en vez de ir lado a lado — ver PAIR_SIDE en JS. F6 (meta ≤6.5
      pantallas): 80→70svh (valor del plan), apilado 120→105svh proporcional. ---- */
   #work .stage{min-height:52svh}
-  body.pairs-stack #work .stage{min-height:72svh}
+  body.pairs-stack #work .stage{min-height:96svh}
 
   /* ---- Team: DOM puro, sin 3D (el eje ya terminó en Work) — Amir protagonista (columna más ancha) ---- */
   /* BUG P0 real, visto con captura de Chrome (auditoría /taste): Team/Services se dibujaban
@@ -283,19 +262,13 @@
     .case-detail-body{grid-template-columns:1fr;gap:1rem}
   }
 
-  html.mobile-lite #tail-liquid{display:none}
-  html.mobile-lite .services,html.mobile-lite .team,html.mobile-lite .contact,html.mobile-lite .site-footer{
-    background:linear-gradient(120deg,rgba(255,106,43,.045),rgba(5,6,8,.82) 44%),rgba(5,6,8,.76)}
-
-  @media(prefers-reduced-motion:reduce){.grain{animation:none}#tail-liquid{opacity:.35!important}.member::after{opacity:.14!important}
-    html.mobile-lite .stage-copy::after{animation:none}html.mobile-lite.motion-ready .mobile-reveal{opacity:1;transform:none}}
+  @media(prefers-reduced-motion:reduce){.grain{animation:none}#tail-liquid{opacity:.35!important}.member::after{opacity:.14!important}}
 </style>
 </head>
 <body>
   <a class="skip-link" href="#main-content">Skip to main content</a>
   <canvas id="gl" aria-hidden="true"></canvas>
   <canvas id="tail-liquid" aria-hidden="true"></canvas>
-  <canvas id="mobile-flow" aria-hidden="true"></canvas>
   <div class="scrim" aria-hidden="true"></div>
   <div class="cursor-haze" aria-hidden="true"></div>
   <div class="grain" aria-hidden="true"></div>
@@ -534,65 +507,13 @@
     },8000);
   </script>
 
-  <script>
-  (()=>{
-    if(!document.documentElement.classList.contains('mobile-lite')) return;
-    const canvas=document.getElementById('mobile-flow'),ctx=canvas?.getContext('2d');
-    if(!ctx) return;
-    const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
-    let w=0,h=0,dpr=1,last=0,lastPaint=0,lastScroll=scrollY,scrollSpeed=0,touchX=.78,touchY=.5,touchEnergy=0;
-    const particles=Array.from({length:140},(_,i)=>({
-      seed:(Math.sin(i*91.73)*43758.5453)%1,
-      y:(i/140),speed:.018+(i%11)*.0022,size:.45+(i%7)*.19,side:(i%2?1:-1)*(4+(i%13)*1.35)
-    }));
-    function resize(){
-      dpr=Math.min(devicePixelRatio||1,1.5);w=innerWidth;h=innerHeight;
-      canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);
-    }
-    function pathX(y,time){return w*.78+Math.sin(y*.012+time*.00055+scrollY*.0022)*(13+Math.min(18,Math.abs(scrollSpeed)*.22));}
-    function draw(now){
-      requestAnimationFrame(draw);
-      if(!reduce&&now-lastPaint<33) return;
-      const dt=Math.min(.05,Math.max(.01,last?(now-last)*.001:.016));last=now;lastPaint=now;
-      scrollSpeed*=Math.exp(-dt*5.2);touchEnergy*=Math.exp(-dt*2.8);
-      ctx.clearRect(0,0,w,h);
-      const time=reduce?0:now;
-      const gradient=ctx.createLinearGradient(0,0,0,h);
-      gradient.addColorStop(0,'rgba(255,106,43,0)');gradient.addColorStop(.18,'rgba(255,106,43,.36)');
-      gradient.addColorStop(.72,'rgba(255,151,101,.48)');gradient.addColorStop(1,'rgba(255,106,43,0)');
-      ctx.strokeStyle=gradient;ctx.lineWidth=1.15+Math.min(1.4,Math.abs(scrollSpeed)*.02);ctx.beginPath();
-      for(let y=-20;y<=h+20;y+=14){const x=pathX(y,time);if(y===-20)ctx.moveTo(x,y);else ctx.lineTo(x,y)}ctx.stroke();
-      for(const p of particles){
-        const py=((p.y+(reduce?0:now*.001*p.speed)+scrollY*.00011)%1.12)*h-35;
-        let px=pathX(py,time)+p.side+Math.sin(time*.0011+p.seed*18)*7;
-        const dist=Math.hypot(px-touchX*w,py-touchY*h),push=Math.max(0,1-dist/115)*touchEnergy;
-        px+=(px-touchX*w)/(dist||1)*push*28;
-        const alpha=.12+(p.size/1.6)*.3+push*.24;
-        ctx.fillStyle=`rgba(255,${Math.round(112+p.size*34)},84,${alpha})`;
-        ctx.beginPath();ctx.arc(px,py,p.size+push*1.8,0,Math.PI*2);ctx.fill();
-      }
-    }
-    addEventListener('scroll',()=>{const next=scrollY;scrollSpeed+=(next-lastScroll)*.12;lastScroll=next},{passive:true});
-    addEventListener('pointermove',event=>{touchX=event.clientX/w;touchY=event.clientY/h;touchEnergy=Math.min(1.2,touchEnergy+.24)},{passive:true});
-    addEventListener('resize',resize,{passive:true});resize();requestAnimationFrame(draw);
-
-    const reveal=[...document.querySelectorAll('.stage-copy,.case-detail,.services-list li,.member,.contact-eyebrow,.contact h2,.contact-intro,.contact-actions')];
-    reveal.forEach(el=>el.classList.add('mobile-reveal'));document.documentElement.classList.add('motion-ready');
-    const observer=new IntersectionObserver(entries=>entries.forEach(entry=>{
-      if(entry.isIntersecting){entry.target.classList.add('is-visible');observer.unobserve(entry.target)}
-    }),{rootMargin:'0px 0px -8% 0px',threshold:.08});
-    reveal.forEach(el=>observer.observe(el));
-  })();
-  </script>
-
   <script type="importmap">
   { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
     "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }
   </script>
   <script type="module">
-  if(!document.documentElement.classList.contains('mobile-lite')){
-  // Mobile-lite no necesita descargar ni evaluar Three. Desktop importa el motor y sus addons
-  // bajo demanda, en paralelo, solo despues de que la arquitectura ya fue elegida.
+  // Un único sitio en desktop y mobile. El tier adapta costo de render, nunca arquitectura,
+  // contenido ni efectos: teléfono recorre la misma escena Three.js con menos resolución/carga.
   const [THREE,
     {EffectComposer},{RenderPass},{UnrealBloomPass},{SMAAPass},{OutputPass},
     {RoundedBoxGeometry},{FontLoader},{TextGeometry},{mergeGeometries}
@@ -634,7 +555,7 @@
     // y ESO es lo que se ve "extremadamente pixelado" (bloques visibles, no solo bordes dentados).
     // Subido en los 3 tiers — sigue MUY por debajo del dpr real del dispositivo (nunca full nativo,
     // eso sí tumbaría el fps que ya se cuidó este mismo día), pero corta la peor parte del escalado.
-    if(small) return{dpr:Math.min(devicePixelRatio,1.25),count:2500,quality:'low',blurTaps:1,bloom:0};
+    if(small) return{dpr:Math.min(devicePixelRatio,1.35),count:3000,quality:'low',blurTaps:1,bloom:0.18};
     if(TOUCH) return{dpr:Math.min(devicePixelRatio,1.75),count:8000,quality:'mid',blurTaps:3,bloom:0.38};
     return{dpr:Math.min(devicePixelRatio,2),count:9000,quality:'high',blurTaps:5,bloom:0.45};})();
   // Tier bajo (mobile) corre menos fps bajo carga → menos frames disponibles para que el lerp de
@@ -745,14 +666,14 @@
   // x: PAIR_SIDE (desktop/tablet) → los 2 casos van lado a lado (±1.3, placas más angostas,
   // ver caseGeo). !PAIR_SIDE (mobile angosto) → apilados y centrados (x:0, mismo fix anti-recorte
   // ya verificado en la ronda anterior: cualquier offset lateral con placa ancha se recorta).
-  const PAIR_GAP=5;
+  const PAIR_GAP=PAIR_SIDE?5:7;
   const CASES=[];
   CASE_PAIRS.forEach((pair,gi)=>{
     const groupY=STAGES.at(-1).y-4-gi*PAIR_GAP;
     pair.cases.forEach((c,ci)=>{
       CASES.push(Object.assign({},c,{
         theme: pair.theme,
-        y: PAIR_SIDE ? groupY : groupY-ci*2.6,
+        y: PAIR_SIDE ? groupY : groupY-ci*3.5,
         x: PAIR_SIDE ? (ci===0?-1.6:1.6) : 0,
       }));
     });
@@ -1082,7 +1003,8 @@
     group.add(spin);
     group.userData.spin=spin;
     group.userData.spinSpeed=0.045*(i%2===0?1:-1);   // sentido alternado por número, no todos iguales
-    group.position.set(s.x, s.y, 0);
+    // Mismos diales/constelación en portrait, con apertura horizontal adaptada al frustum.
+    group.position.set(PAIR_SIDE?s.x:s.x*.78, s.y, 0);
     scene.add(group);
     return group;
   });
@@ -1120,6 +1042,13 @@
     // lector de pantalla no tiene ese límite); solo la versión 3D lo cambia a "x".
     text=text.replace(/×/g,'x');
     const words=text.split(' '); const lines=[]; let current='';
+    // Medir con los advances reales del typeface, sin construir y descartar una TextGeometry
+    // por cada palabra tentativa. En mobile esa medición temporal generaba decenas de extrusiones
+    // síncronas antes de crear el texto final y era la mayor fuente de bloqueo de CPU.
+    const glyphs=font.data.glyphs,resolution=font.data.resolution||1000;
+    const measure=line=>[...line].reduce((sum,char)=>{
+      const glyph=glyphs[char]||glyphs['?'];return sum+(glyph?.ha||resolution*.5)*size/resolution;
+    },0);
     for(const word of words){
       const test=current?current+' '+word:word;
       // BUG real de performance encontrado (sitio pesado/lento en mobile, señalado por Agus):
@@ -1128,10 +1057,7 @@
       // quedar casi plano). El bevel agregaba anillos de geometría alrededor de CADA letra sin
       // ningún beneficio visual (texto tan fino no necesita bisel) — medido: 101 meshes / 360K
       // triángulos solo en captions. `bevelEnabled:false` explícito, acá y en addTextLines.
-      const g=new TextGeometry(test,{font,size,height:0.01,curveSegments:2,bevelEnabled:false});
-      g.computeBoundingBox();
-      const w=g.boundingBox.max.x-g.boundingBox.min.x;
-      g.dispose();
+      const w=measure(test);
       if(w>maxWidth && current){ lines.push(current); current=word; }
       else current=test;
     }
@@ -1345,7 +1271,7 @@
   // (aspecto angosto) el frustum HORIZONTAL se comprime mucho a la misma distancia — las placas
   // quedarían gigantes/recortadas. Compensamos alejando la cámara en proporción inversa al
   // aspecto (referencia ~1.6, típico desktop), clampeado para no exagerar en pantallas ultra-anchas.
-  function aspectZScale(){ return Math.min(2.3, Math.max(1, 1.6/camera.aspect)); }
+  function aspectZScale(){ return Math.min(PAIR_SIDE?2.3:2.55, Math.max(1, 1.6/camera.aspect)); }
   function fit(){renderer.setSize(innerWidth,innerHeight);composer.setSize(innerWidth,innerHeight);
     camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix(); resizeBgRT();}
   fit(); addEventListener('resize',fit);
@@ -1529,8 +1455,10 @@
   const caseProximity=new Array(CASES.length).fill(0);
   const cloudProximity=new Array(CLOUD_STATS.length).fill(0);
   function updateProximity(){
-    for(let i=0;i<STAGES.length;i++) stageProximity[i]=Math.max(0,Math.min(1,1-Math.abs(camLook.y-STAGES[i].y)/5));
-    for(let i=0;i<CASES.length;i++) caseProximity[i]=Math.max(0,Math.min(1,1-Math.abs(camLook.y-CASES[i].y)/5));
+    const stageRange=PAIR_SIDE?5:3.6;
+    const caseRange=PAIR_SIDE?5:2.8;
+    for(let i=0;i<STAGES.length;i++) stageProximity[i]=Math.max(0,Math.min(1,1-Math.abs(camLook.y-STAGES[i].y)/stageRange));
+    for(let i=0;i<CASES.length;i++) caseProximity[i]=Math.max(0,Math.min(1,1-Math.abs(camLook.y-CASES[i].y)/caseRange));
     // La constelacion ocupa apenas ~3 unidades: /5 mantiene sus cuatro diales presentes dentro de
     // Signal, pero los retira antes de que Method entre al centro. El rango anterior (/8) dejaba
     // captions de Results todavia legibles encima de la primera placa en mobile.
@@ -1563,7 +1491,7 @@
       // En desktop prox² dejaba ambas placas al ~26% justo en el punto medio: durante ese tramo
       // se percibía sólo el embudo. 1.55 mantiene una transición legible (~35%) sin volver al
       // viejo túnel de objetos al 100%.
-      const focusCurve=TIER.quality==='low'?Math.pow(prox,1.25):Math.pow(prox,1.55);
+      const focusCurve=!PAIR_SIDE?Math.pow(prox,2.15):(TIER.quality==='low'?Math.pow(prox,1.25):Math.pow(prox,1.55));
       const f=(FOCUS_FLOOR+(1-FOCUS_FLOOR)*focusCurve)*journeyPresence;
       for(const e of mats) e.m.opacity=e.base*f;
     };
@@ -1663,7 +1591,6 @@
     updateFromScroll,methodEl,workEl,heroEl,camLook,get progress(){return progress},get camTargetY(){return camTargetY},
     get camTargetZ(){return camTargetZ},get uOrder(){return uniforms.uOrder.value}}; // solo verificación
   console.log('[amir] hero + método + work listo ·',N,'partículas ·',STAGES.length,'placas method ·',CASES.length,'placas work');
-  }
   </script>
   <script>
   (()=>{
@@ -1680,8 +1607,6 @@
       if(detail.open) emit('case_breakdown_open',{case:detail.dataset.case});
     }));
 
-    // Mobile keeps the static editorial tail to preserve its 100 Lighthouse profile.
-    if(document.documentElement.classList.contains('mobile-lite')) return;
     const canvas=document.getElementById('tail-liquid');
     const startEl=document.querySelector('.services');
     const footer=document.querySelector('.site-footer');

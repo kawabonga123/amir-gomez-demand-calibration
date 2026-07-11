@@ -267,6 +267,8 @@ Validación Playwright a 1440×900: ante un salto amplio, `--liquid-dx` recorri�
 
 ## MOBILE CON MATERIA Y MOVIMIENTO — 2026-07-11
 
+> **SUPERADO / NO USAR:** esta arquitectura mobile-lite fue rechazada por Agus el mismo día porque cambiaba el sitio en vez de adaptarlo. La decisión vigente está en “ARQUITECTURA ÚNICA DESKTOP + MOBILE”.
+
 Feedback real de Agus: mobile había quedado como un sitio estático con sólo texto. La estrategia mobile-lite evitaba correctamente el costo de Three.js, pero había eliminado también el concepto visual del producto. Se mantuvo la arquitectura adaptativa y se agregó una experiencia propia para teléfono:
 
 - Canvas 2D procedural fijo con 140 partículas y una corriente de señal orgánica, limitado a 30 fps y DPR máximo 1,5.
@@ -277,3 +279,16 @@ Feedback real de Agus: mobile había quedado como un sitio estático con sólo t
 - Three.js sigue sin descargarse ni evaluarse en mobile; desktop mantiene su WebGL y oculta por completo el canvas 2D.
 
 Validación 375×812: `mobile-flow` visible, frames distintos tras scroll/touch (`moved:true`), 0 overflow y consola limpia. Captura real muestra partículas y corriente entre paneles. Desktop 1440×900: `mobileCanvas:none`, WebGL activo y 0 overflow. Lighthouse no entregó reporte por un error EPERM al limpiar su carpeta temporal de Windows; no se atribuye un score sin evidencia.
+
+## ARQUITECTURA ÚNICA DESKTOP + MOBILE — 2026-07-11
+
+Corrección urgente de dirección: Agus rechazó que mobile mostrara un sitio editorial distinto. Mobile debe ser el mismo sitio y la adaptación sólo puede reducir costo técnico, nunca reemplazar arquitectura, contenido ni efectos.
+
+- Eliminados por completo `mobile-lite`, el Canvas 2D alternativo, los paneles DOM alternativos y sus reveals.
+- Three.js, eje de partículas, diales Signal, placas Method, seis casos Work, cámara, frostGlass, foco, Team y líquido inferior corren en ambos formatos.
+- Tier mobile: DPR máximo 1,35; 3.000 partículas; blur de una muestra; bloom 0,18; geometría de texto sin bevel. Es la misma escena con menor costo.
+- Portrait conserva los mismos objetos pero adapta composición: constelación comprimida en X, casos en una sola columna, frustum 2,55×, separación física de 3,5 unidades y focus más estricto.
+- Work portrait aumenta su recorrido a 96svh por grupo para dar tiempo de lectura a los seis casos sin superponerlos.
+- `wrapText()` usa métricas reales del typeface en vez de construir geometrías temporales por palabra. TBT Lighthouse bajó 4.320→2.540 ms sin cambiar texto final.
+
+Evidencia local real: 375×812 muestra Hero WebGL, cuatro diales, tres placas Method, seis casos y Team con líquido; `mobileLite:false`, `webgl:true`, 3/6 objetos, 0 overflow, 0 errores. 375×667 conserva Hero completo. Desktop 1440×900 mantiene tier high, 9.000 partículas, pares laterales y 0 overflow. Lighthouse mobile: Performance 68, Accessibility 100, Best Practices 100, SEO 100, LCP 2,2 s, TBT 2.540 ms.
