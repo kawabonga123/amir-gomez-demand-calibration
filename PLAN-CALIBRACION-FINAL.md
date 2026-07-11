@@ -342,3 +342,15 @@ Feedback real de Agus: con scroll normal el último par de Work seguía siendo c
 - Mobile usa la misma transición, reescalada por `clamp()`, sin bifurcar contenido ni arquitectura.
 
 Evidencia local: desktop 2048×975, con el último par ya fuera antes de que Case context cubra el cuerpo; mobile 375×812, curva completa, título visible y sin superposición. Consola limpia en ambos viewports.
+
+## MEMBRANA DE PROFUNDIDAD Y COLA CONTINUA — 2026-07-11
+
+La primera curva orgánica seguía leyéndose como una línea dibujada y el release de cámara desplazaba también el espiral, dejando su extremo separado del bloque.
+
+- La curva pasa a ser una membrana semitransparente con `backdrop-filter`: el WebGL permanece detrás, pero pierde foco y saturación antes de ser absorbido por el fondo editorial.
+- El borde preciso se reemplaza por una banda de niebla ancha, formada por tres halos radiales, blur de 24–32 px y una respiración de siete segundos. No hay trazo de neón ni costura recta.
+- Las placas se disuelven con un factor `workRelease` independiente. La cámara deja de empujar todo el mundo cinco unidades, por lo que el objeto-eje conserva continuidad.
+- La geometría del hilo y sus partículas se extienden cuatro unidades adicionales debajo del último caso; la membrana los tapa físicamente mientras el canvas termina su fade bajo el bloque.
+- `prefers-reduced-motion` congela la respiración sin quitar la profundidad ni el blur.
+
+Evidencia Playwright: desktop 2048×975 y mobile 375×812, últimas placas en opacity 0 durante la entrada, espiral continuo hasta la membrana, overflow 0 y consola sin errores.
