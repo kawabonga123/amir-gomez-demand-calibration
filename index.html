@@ -51,7 +51,7 @@
   #gl{position:fixed;inset:0;z-index:0;display:block}
   #tail-liquid{position:fixed;inset:0;z-index:1;display:block;width:100%;height:100%;pointer-events:none;opacity:0;
     transition:opacity .8s var(--ease)}
-  body.tail-active #tail-liquid{opacity:.9}
+  body.tail-active #tail-liquid{opacity:1}
   /* scrim: oscurece la izquierda (donde vive el texto) para legibilidad, sin tapar el efecto */
   .scrim{position:fixed;inset:0;z-index:1;pointer-events:none;
     background:linear-gradient(100deg, rgba(5,6,8,.92) 0%, rgba(5,6,8,.6) 28%, rgba(5,6,8,.05) 55%, transparent 70%)}
@@ -1610,7 +1610,9 @@
     if(!canvas||!startEl||!footer) return;
     const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
     let gl,program,buffer,uniforms,initialized=false,running=false,active=false;
-    let pointerX=.5,pointerY=.5,lastScroll=scrollY,scrollVelocity=0,lastFrame=0;
+    let pointerX=.5,pointerY=.5,targetX=.5,targetY=.5,lastPointerX=.5,lastPointerY=.5;
+    let pointerVX=0,pointerVY=0,pointerImpulse=0,lastPointerTime=performance.now();
+    let lastScroll=scrollY,scrollVelocity=0,scrollImpulse=0,lastFrame=0;
 
     function shader(type,source){
       const value=gl.createShader(type); gl.shaderSource(value,source); gl.compileShader(value);
@@ -1625,8 +1627,8 @@
       const vertex=`attribute vec2 p;void main(){gl_Position=vec4(p,0.0,1.0);}`;
       const fragment=`
         precision highp float;
-        uniform vec2 r,m;
-        uniform float t,v;
+        uniform vec2 r,m,d;
+        uniform float t,v,i,s;
         float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
         float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);
           return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x),f.y);}
@@ -1634,20 +1636,29 @@
         void main(){
           vec2 uv=gl_FragCoord.xy/r;
           vec2 p=uv-.5;p.x*=r.x/r.y;
-          float speed=clamp(abs(v)*.018,0.0,.7);
-          vec2 flow=vec2(t*.035+v*.0015,-t*.065);
-          float q=fbm(p*2.1+flow);
-          float warped=fbm(p*3.6+vec2(q,-q)*1.35-flow*.7);
-          float fine=fbm(p*7.0+vec2(warped,q)+flow*.35);
+          float speed=clamp(abs(v)*.024+s,0.0,1.0);
+          vec2 flow=vec2(t*.045+v*.0024,-t*.075);
           vec2 mp=m-.5;mp.x*=r.x/r.y;
-          float wake=exp(-length(p-mp)*5.5)*(0.35+speed);
-          float current=smoothstep(.36,.82,warped*.72+fine*.38+speed*.12);
-          float veil=smoothstep(.15,.85,q)*.55+current*.8+wake*.55;
+          vec2 dir=d;dir.x*=r.x/r.y;
+          float dirLen=max(length(dir),.001);
+          vec2 axis=dir/dirLen;
+          vec2 rel=p-mp;
+          float along=dot(rel,axis),across=dot(rel,vec2(-axis.y,axis.x));
+          float trail=exp(-abs(across)*13.0)*exp(-max(along,0.0)*4.0)*exp(-max(-along,0.0)*1.2)*i;
+          float rings=sin(length(rel)*46.0-i*3.0)*exp(-length(rel)*5.0)*i;
+          float scrollWave=sin((p.y+t*.55)*18.0+p.x*5.0)*speed*.12;
+          vec2 displacement=axis*trail*.48+normalize(rel+vec2(.001))*rings*.08+vec2(scrollWave*.18,v*.00055);
+          float q=fbm((p+displacement)*2.15+flow);
+          float warped=fbm((p+displacement)*3.7+vec2(q,-q)*1.55-flow*.7);
+          float fine=fbm((p-displacement*.45)*7.4+vec2(warped,q)+flow*.35);
+          float wake=exp(-length(rel)*4.2)*(.28+i*.95)+trail*.9+max(rings,0.0)*.45;
+          float current=smoothstep(.32,.78,warped*.7+fine*.4+speed*.2);
+          float veil=smoothstep(.12,.82,q)*.58+current*.88+wake*.8;
           vec3 ember=vec3(1.0,.22,.055);
           vec3 cream=vec3(1.0,.69,.46);
           vec3 color=mix(ember,cream,clamp(fine+wake*.45,0.0,1.0));
           float edge=1.0-smoothstep(.38,.78,length(p));
-          float alpha=clamp(veil*.18*edge+wake*.055,0.0,.24);
+          float alpha=clamp(veil*.21*edge+wake*.095,0.0,.38);
           gl_FragColor=vec4(color*alpha,alpha);
         }`;
       program=gl.createProgram();
@@ -1658,7 +1669,7 @@
       buffer=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buffer);
       gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
       const position=gl.getAttribLocation(program,'p');gl.enableVertexAttribArray(position);gl.vertexAttribPointer(position,2,gl.FLOAT,false,0,0);
-      uniforms={r:gl.getUniformLocation(program,'r'),m:gl.getUniformLocation(program,'m'),t:gl.getUniformLocation(program,'t'),v:gl.getUniformLocation(program,'v')};
+      uniforms={r:gl.getUniformLocation(program,'r'),m:gl.getUniformLocation(program,'m'),d:gl.getUniformLocation(program,'d'),t:gl.getUniformLocation(program,'t'),v:gl.getUniformLocation(program,'v'),i:gl.getUniformLocation(program,'i'),s:gl.getUniformLocation(program,'s')};
       resize(); return true;
     }
     function resize(){
@@ -1670,12 +1681,17 @@
     function draw(now){
       if(!active){running=false;return;}
       running=true;lastFrame=now;
-      scrollVelocity*=.9;
+      pointerX+=(targetX-pointerX)*.16;pointerY+=(targetY-pointerY)*.16;
+      pointerVX*=.91;pointerVY*=.91;pointerImpulse*=.935;
+      scrollVelocity*=.88;scrollImpulse*=.93;
       gl.useProgram(program);
       gl.uniform2f(uniforms.r,canvas.width,canvas.height);
       gl.uniform2f(uniforms.m,pointerX,pointerY);
+      gl.uniform2f(uniforms.d,pointerVX,pointerVY);
       gl.uniform1f(uniforms.t,reduce?0:now*.001);
       gl.uniform1f(uniforms.v,reduce?0:scrollVelocity);
+      gl.uniform1f(uniforms.i,reduce?0:Math.min(1.5,pointerImpulse));
+      gl.uniform1f(uniforms.s,reduce?0:Math.min(1,scrollImpulse));
       gl.drawArrays(gl.TRIANGLES,0,3);
       if(!reduce) requestAnimationFrame(draw); else running=false;
     }
@@ -1687,14 +1703,19 @@
       if(active&&init()&&!running) requestAnimationFrame(draw);
     }
     addEventListener('scroll',()=>{
-      const next=scrollY;scrollVelocity+=(next-lastScroll)*.18;lastScroll=next;updateActive();
+      const next=scrollY,delta=next-lastScroll;scrollVelocity+=delta*.24;
+      scrollImpulse=Math.min(1,scrollImpulse+Math.abs(delta)*.006);lastScroll=next;updateActive();
     },{passive:true});
     addEventListener('mousemove',event=>{
-      pointerX=event.clientX/innerWidth;pointerY=1-event.clientY/innerHeight;
-      const dx=((pointerX-.5)*1.6).toFixed(2)+'px';
-      const dy=((.5-pointerY)*1.1+Math.max(-.7,Math.min(.7,scrollVelocity*.012))).toFixed(2)+'px';
+      const now=performance.now(),dt=Math.max(8,now-lastPointerTime);
+      targetX=event.clientX/innerWidth;targetY=1-event.clientY/innerHeight;
+      pointerVX=(targetX-lastPointerX)*Math.min(3,32/dt);pointerVY=(targetY-lastPointerY)*Math.min(3,32/dt);
+      pointerImpulse=Math.min(1.5,pointerImpulse+Math.hypot(pointerVX,pointerVY)*5.5+.08);
+      lastPointerX=targetX;lastPointerY=targetY;lastPointerTime=now;
+      const dx=((targetX-.5)*2.4).toFixed(2)+'px';
+      const dy=((.5-targetY)*1.8+Math.max(-1.2,Math.min(1.2,scrollVelocity*.016))).toFixed(2)+'px';
       document.body.style.setProperty('--liquid-dx',dx);document.body.style.setProperty('--liquid-dy',dy);
-      document.body.style.setProperty('--liquid-px',(pointerX*100).toFixed(1)+'%');document.body.style.setProperty('--liquid-py',((1-pointerY)*100).toFixed(1)+'%');
+      document.body.style.setProperty('--liquid-px',(targetX*100).toFixed(1)+'%');document.body.style.setProperty('--liquid-py',((1-targetY)*100).toFixed(1)+'%');
     },{passive:true});
     addEventListener('resize',()=>{resize();updateActive()});
     updateActive();

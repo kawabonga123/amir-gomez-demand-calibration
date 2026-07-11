@@ -217,3 +217,15 @@ Feedback real de Agus: había tramos de scroll donde sólo quedaba el embudo, de
 - `Case context` redujo heading 72→58 px aprox. y padding vertical 5→4 rem.
 
 Validación puntual: capturas en los dos midpoints más débiles (Method -17,5 y Work -31,5) muestran contenido a ambos lados del eje; Case context al top muestra fondo limpio y Services entra con la nueva corriente, sin capas viejas.
+
+## REACTIVIDAD DEL LÍQUIDO — 2026-07-11
+
+Feedback real de Agus: la corriente inferior se percibía como iluminación atmosférica, pero no respondía con claridad al mouse ni se agitaba al scrollear. Se reemplazó la interacción plana por una respuesta con energía e inercia:
+
+- El puntero ahora inyecta velocidad y dirección en el shader; genera una estela orientada y ondas concéntricas que se disipan gradualmente.
+- El scroll acumula impulso, crea una corriente transversal y tarda en volver al reposo en vez de limitarse a cambiar el ruido de fondo.
+- La posición visual interpola hacia el input, mientras velocidad e impulso tienen amortiguación independiente: la materia tiene masa y no queda pegada al cursor.
+- Se amplió el rango de contraste del fluido sin distorsionar caras ni cuerpo de texto. Los microdesplazamientos DOM siguen limitados a etiquetas y encabezados.
+- Mobile mantiene la composición editorial estática y `prefers-reduced-motion` conserva una versión quieta.
+
+Validación local: canvas activo a 1440×900, respuesta diferenciada capturada en reposo / pointer wake / scroll wake, 0 overflow horizontal y consola sin errores ni warnings.
