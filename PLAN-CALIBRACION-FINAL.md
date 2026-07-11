@@ -354,3 +354,23 @@ La primera curva orgánica seguía leyéndose como una línea dibujada y el rele
 - `prefers-reduced-motion` congela la respiración sin quitar la profundidad ni el blur.
 
 Evidencia Playwright: desktop 2048×975 y mobile 375×812, últimas placas en opacity 0 durante la entrada, espiral continuo hasta la membrana, overflow 0 y consola sin errores.
+
+## MOBILE SCROLL-MODE SIN COLA DE CÁMARA — 2026-07-11
+
+Feedback reiterado de Agus en dispositivo real: aun sin strobe, mobile seguía lento y los objetos no permanecían legibles durante un gesto normal. La causa medible no era scroll nativo ni falta de distancia: la cámara aplicaba easing cinemático mientras el documento ya había avanzado.
+
+Se compararon tres alternativas:
+
+1. Una escena/DOM mobile simplificada: rechazada porque vuelve a convertir mobile en otro sitio.
+2. Scroll-snap obligatorio: rechazado porque pelea con la inercia nativa y oculta el problema.
+3. La misma escena con presupuesto dinámico durante el gesto: elegida.
+
+Implementación:
+
+- En tier bajo y durante los 150 ms posteriores a un evento de scroll, la cámara sigue el target de forma directa. En reposo recupera el easing exponencial.
+- `heldJourney()` recompone Signal, Method y Work en portrait: cada objeto ocupa 68% de su tramo en una pose estable y usa el 32% final para una transición `smoothstep`. No modifica el scroll nativo ni desktop.
+- La textura frosted se conserva estable mientras se desplaza; no alterna frames ni parpadea. En reposo se actualiza a 20 fps.
+- Mobile mantiene los mismos objetos y materiales con 1.800 partículas, bloom desactivado y backdrop al 45% por eje. DPR 1,35 y SMAA se conservan para no volver al pixelado.
+- Se elimina MSAA redundante del contexto WebGL porque el resultado ya atraviesa EffectComposer + SMAA.
+
+Prueba comparativa Playwright 375×812 con CPU throttle 4× y seis gestos de 520 px: versión anterior con atraso de cámara 5,15–8,49 unidades a los 34 ms; nueva versión 0,00 en los seis gestos. P95 7 ms, máximo 13,9 ms, 0 frames >20 ms, overflow 0 y consola limpia en el entorno automatizado. Capturas normales en el centro de Method y Work muestran un solo objeto protagonista y legible; antes, la misma posición mezclaba `63K` con `UNDERSTAND`.

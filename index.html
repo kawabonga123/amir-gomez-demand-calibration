@@ -579,7 +579,7 @@
     // y ESO es lo que se ve "extremadamente pixelado" (bloques visibles, no solo bordes dentados).
     // Subido en los 3 tiers — sigue MUY por debajo del dpr real del dispositivo (nunca full nativo,
     // eso sí tumbaría el fps que ya se cuidó este mismo día), pero corta la peor parte del escalado.
-    if(small) return{dpr:Math.min(devicePixelRatio,1.35),count:3000,quality:'low',blurTaps:1,bloom:0.18};
+    if(small) return{dpr:Math.min(devicePixelRatio,1.35),count:1800,quality:'low',blurTaps:1,bloom:0};
     if(TOUCH) return{dpr:Math.min(devicePixelRatio,1.75),count:8000,quality:'mid',blurTaps:3,bloom:0.38};
     return{dpr:Math.min(devicePixelRatio,2),count:9000,quality:'high',blurTaps:5,bloom:0.45};})();
   // Tier bajo (mobile) corre menos fps bajo carga → menos frames disponibles para que el lerp de
@@ -595,7 +595,9 @@
   if(!PAIR_SIDE) document.body.classList.add('pairs-stack');
 
   const canvas=document.getElementById('gl');
-  const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+  // El render final siempre atraviesa EffectComposer + SMAA: pedir MSAA también en el contexto
+  // duplica memoria/trabajo sin suavizar el resultado compuesto.
+  const renderer=new THREE.WebGLRenderer({canvas,antialias:false,powerPreference:'high-performance'});
   renderer.setPixelRatio(TIER.dpr); renderer.setClearColor(0x050608,1);
   renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=0.9;
   const scene=new THREE.Scene();
@@ -1249,7 +1251,7 @@
   function resizeBgRT(){
     // Mobile: refracción cada frame a 55% por eje (30% de los píxeles), más barata y estable
     // que actualizar un frame sí y otro no a resolución completa.
-    const backdropScale=TIER.quality==='low'?.55:1;
+    const backdropScale=TIER.quality==='low'?.45:1;
     const w=Math.max(2,Math.round((canvas.width||2)*backdropScale));
     const h=Math.max(2,Math.round((canvas.height||2)*backdropScale));
     if(bgRT.width!==w||bgRT.height!==h){ bgRT.setSize(w,h);
@@ -1390,7 +1392,21 @@
   // antes de llegar a Method (perturbación de <2% del recorrido total en progress~0.05).
   const HERO_CAM_Y=1.6;
   let progress=0, camTargetY=HERO_CAM_Y, camTargetZ=9, camLookTargetY=0, mainCanvasActive=true, workRelease=1;
+  let lastScrollAt=-Infinity;
+  // Mobile no puede dedicar media pantalla a posiciones ambiguas entre dos objetos. Cada tramo
+  // conserva una pose de lectura y usa sólo el final para viajar al siguiente; el documento sigue
+  // con scroll nativo, sin scroll-snap ni secuestro de inercia.
+  function heldJourney(p,ys,hold=.68){
+    p=Math.max(0,Math.min(1,p));
+    if(ys.length<2)return ys[0]??0;
+    const scaled=p*(ys.length-1),i=Math.min(ys.length-2,Math.floor(scaled));
+    const local=scaled-i;
+    let q=Math.max(0,Math.min(1,(local-hold)/(1-hold)));
+    q=q*q*(3-2*q);
+    return lerp(ys[i],ys[i+1],q);
+  }
   function updateFromScroll(){
+    lastScrollAt=performance.now();
     // uOrder: el caos se calibra durante el Hero (para cuando aparece la nube de señal, la
     // demanda ya está "ordenada" — refuerza el mensaje, no es solo decorativo).
     const preMethodRange=Math.max(1, heroEl.offsetHeight-innerHeight*0.3);
@@ -1418,10 +1434,14 @@
       const p=Math.max(0,Math.min(1,(scrollY-journeyTop)/Math.max(1,methodTop-journeyTop)));
       camLookTargetY = p<CLOUD_APPROACH_FRAC
         ? lerp(0, CLOUD_Y_START, p/CLOUD_APPROACH_FRAC)
-        : lerp(CLOUD_Y_START, CLOUD_Y_END, (p-CLOUD_APPROACH_FRAC)/(1-CLOUD_APPROACH_FRAC));
+        : (!PAIR_SIDE
+          ? heldJourney((p-CLOUD_APPROACH_FRAC)/(1-CLOUD_APPROACH_FRAC),CLOUD_STATS.map(s=>s.y))
+          : lerp(CLOUD_Y_START, CLOUD_Y_END, (p-CLOUD_APPROACH_FRAC)/(1-CLOUD_APPROACH_FRAC)));
     }else if(scrollY<workTop){
       const p=Math.max(0,Math.min(1,(scrollY-methodTop)/Math.max(1,workTop-methodTop)));
-      camLookTargetY=lerp(CLOUD_Y_END, METHOD_Y_END, p);
+      camLookTargetY=!PAIR_SIDE
+        ? heldJourney(p,[CLOUD_Y_END,...STAGES.map(s=>s.y)])
+        : lerp(CLOUD_Y_END, METHOD_Y_END, p);
     }else{
       // El último caso debe llegar al centro ANTES de que Case context entre a taparlo. Mapear
       // hasta el bottom físico de Work lo enfocaba recién cuando el bloque opaco ya estaba arriba.
@@ -1430,7 +1450,9 @@
       if(scrollY<=workReadableEnd){
         workRelease=1;
         const p=Math.max(0,Math.min(1,(scrollY-workTop)/Math.max(1,workReadableEnd-workTop)));
-        camLookTargetY=lerp(METHOD_Y_END,lastPlateY,p);
+        camLookTargetY=!PAIR_SIDE
+          ? heldJourney(p,[METHOD_Y_END,...CASES.map(c=>c.y)])
+          : lerp(METHOD_Y_END,lastPlateY,p);
       }else{
         // Las placas se disuelven, pero el objeto-eje NO se desplaza: continúa hasta quedar
         // físicamente debajo de la membrana borrosa de Case context, sin una punta cortada.
@@ -1577,10 +1599,14 @@
       }
     } else { uniforms.uOrder.value=0.32; camera.position.set(0,0.8,9*aspectZScale()); camLook.set(0,0,0); }
   }
-  let lastRenderMs=performance.now();
+  let lastRenderMs=performance.now(),lastBackdropAt=-Infinity;
   function render(now=performance.now()){
     const dt=Math.min(.05,Math.max(.001,(now-lastRenderMs)*.001));lastRenderMs=now;
-    const cameraEase=REDUCE?1:1-Math.exp(-CAM_RESPONSE*dt);
+    // En mobile, durante el gesto la cámara debe representar la posición ACTUAL del documento.
+    // Una cola cinemática es agradable a 60fps, pero con frames perdidos se vuelve atraso visual
+    // y hace que una placa siga cruzando la pantalla cuando el dedo ya frenó.
+    const activelyScrolling=TIER.quality==='low'&&(now-lastScrollAt)<150;
+    const cameraEase=(REDUCE||activelyScrolling)?1:1-Math.exp(-CAM_RESPONSE*dt);
     const t=REDUCE?0:clock.getElapsedTime();
     uniforms.uTime.value=t; uniforms.uForce.value*=0.94;
     threadUniforms.uTime.value=t;
@@ -1615,9 +1641,12 @@
     casePlates.forEach((p,i)=>{
       const target=TOUCH ? caseProximity[i]*0.55 : ((p===hoveredPlate)?caseProximity[i]:0);
       p.material.userData.uHover.value+=(target-p.material.userData.uHover.value)*cameraEase; });
-    // Backdrop cada frame. En low-tier su render target reducido evita alternancia visual y baja GPU.
+    // Mobile scroll-mode: conservar la última textura frosted durante el gesto elimina un render
+    // completo de la escena por frame SIN alternar estados visuales (la causa del strobe anterior).
+    // En reposo se refresca a 20fps, suficiente para la deriva lenta de partículas y refracción.
     if(mainCanvasActive){
-      renderBackdrop();
+      const refreshBackdrop=TIER.quality!=='low'||(!activelyScrolling&&now-lastBackdropAt>50);
+      if(refreshBackdrop){renderBackdrop();lastBackdropAt=now;}
       composer.render();
     }
     frames++;
