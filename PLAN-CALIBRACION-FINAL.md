@@ -384,3 +384,17 @@ Feedback de Agus: la nueva exhibición era estable, pero trece escenas individua
 - `prefers-reduced-motion` muestra las mismas composiciones agrupadas congeladas: varias piezas, eje, partículas y refracción estática, no una placa solitaria sobre negro.
 
 Evidencia Playwright 375×812: longitud medida 1,6502 viewports, grupos 2/2/3 completos, segunda terna Work visible sobre la membrana, reduced-motion activo con composición completa, overflow 0 y consola limpia.
+
+## CURADURÍA DE CUATRO CASOS Y FROST ALINEADO — 2026-07-11
+
+Feedback de Agus: la última terna seguía justa, algunas composiciones parecían descentradas y dentro de varias placas aparecía una segunda espiral desplazada al costado, sin el glow frozen de desktop.
+
+- Mobile deja de intentar contar seis casos. Conserva cuatro pruebas con mecanismos distintos: `$1M+` Webinar/VSL, `10X` Lead Magnet, `7X` UGC+AI y `5.3X` SEO+GEO. `63K` y `3.7X` permanecen en desktop y Case context.
+- Work pasa a dos duplas exactas (`[0,1]` y `[2,5]`), escala 0,82; la segunda ocupa el espacio liberado y queda completa sobre la membrana.
+- Method elimina offsets X en portrait: las tres placas comparten eje central y las parejas se leen como composiciones, no como elementos desordenados.
+- Cierre estricto por sección: Cloud, Method y Work tienen compuertas mutuamente excluyentes; ninguna placa anterior puede quedar fantasma arriba del grupo activo.
+- Causa raíz del doble espiral: `gl_FragCoord` del framebuffer final se dividía por la resolución reducida del backdrop (55%), desplazando la UV. El shader ahora separa `uViewportResolution` de `uResolution`; el eje exterior y su muestra dentro del vidrio quedan alineados.
+- Mobile elimina desplazamiento lateral de refracción y recupera profundidad con fondo 1,62×, fresnel 0,32, tinte 0,16, partículas 18% mayores y naranja HDR reforzado. No agrega postprocesado ni pases extra.
+- Ambas piezas del grupo activo son protagonistas a opacidad base completa; el espiral se ve a través del vidrio, pero el texto ya no hereda la atenuación de una placa vecina.
+
+Evidencia Playwright 375×812: Method X `[0,0,0]`; Work final muestra exclusivamente casos `[2,5]`, ambos opacity `0.6`; segunda dupla completa; espiral refractado alineado; overflow 0 y consola limpia.

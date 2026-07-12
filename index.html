@@ -668,6 +668,7 @@
     {y:PAIR_SIDE?-25:-34, x:-0.5, color:0xff7a3d, lines:['THE SIGNAL','COMPOUNDS'], step:'Step 03',
       caption:'Winners earn budget; weak signals are cut. The data shows what to scale next — compounding every week the funnel keeps running.'},
   ];
+  if(!PAIR_SIDE)STAGES.forEach(s=>{s.x=0});
   // ---- Work: 6 casos reales agrupados de a PARES por tema (mitad del scroll de 6 pantallas
   // sueltas — feedback de Agus tras ver el sitio: "hay que scrollear muchísimo", "condensar").
   // Siguen bajando por el MISMO eje (principio "un solo objeto eje" de Innovatron). El "gancho"
@@ -721,6 +722,10 @@
       }));
     });
   });
+  // Mobile cuenta cuatro pruebas, no seis: $1M+, 10X, 7X y 5.3X. 63K y 3.7X siguen completos
+  // en desktop y en Case context; acá se prioriza variedad de mecanismo sobre inventario total.
+  // El último caso ocupa la posición liberada para formar una segunda dupla compacta.
+  if(!PAIR_SIDE)CASES[5].y=CASES[3].y;
 
   // NOTA: acá antes vivía un sistema de "gates" por sección (sectionGate/CLOUD_BOTTOM_Y/
   // METHOD_BOTTOM_Y/GATE_FEATHER) para controlar la opacidad de captions DOM dockeados por
@@ -840,7 +845,7 @@
         // (UnrealBloomPass) a resolución de render reducida — se ve como un bloque duro, no un
         // brillo suave. Boost de tamaño más moderado (antes 0.9) para que el destello siga
         // notándose sin crear ese artefacto.
-        gl_PointSize=(aRnd*1.0+0.35)*(52.0/-mv.z)*(0.6+order*0.6)*(1.0+aBigZ*2.2)*(1.0+vTwinkle*0.4);
+        gl_PointSize=(aRnd*1.0+0.35)*(52.0/-mv.z)*(0.6+order*0.6)*(1.0+aBigZ*2.2)*(1.0+vTwinkle*0.4)*${(TIER.quality==='low'?1.18:1).toFixed(2)};
         gl_Position=projectionMatrix*mv;
       }`,
     fragmentShader:`
@@ -854,7 +859,7 @@
         // (frostGlass samplea la escena de fondo — más brillo acá = más "vidrio esmerilado" real).
         // R>1.0 a propósito: con ACESFilmicToneMapping activo, valores HDR por encima de 1.0 son
         // los que el bloom engancha para dar el halo neón — en 1.0 exacto no había margen de sobra.
-        vec3 signalCol=vec3(1.35,0.46,0.16);  // señal calibrada: naranja de marca A+ Growth, HDR
+        vec3 signalCol=vec3(${TIER.quality==='low'?'1.55,0.55,0.20':'1.35,0.46,0.16'});  // naranja HDR; mobile compensa la ausencia de bloom multipass
         vec3 col=mix(chaosCol,signalCol,vOrder);
         col+=vTwinkle*vec3(1.1,0.9,0.6);       // destello: pico HDR por encima de 1.0 (el bloom lo agarra), moderado
         float readingFade=1.0-uReadFocus*${(TIER.quality==='low'?.38:.9).toFixed(2)};
@@ -919,8 +924,9 @@
       sh.uniforms.uNeon={value:new THREE.Color(color)};
       sh.uniforms.tBackdrop={value:null};
       sh.uniforms.uResolution={value:new THREE.Vector2(1,1)};
+      sh.uniforms.uViewportResolution={value:new THREE.Vector2(1,1)};
       m.userData.shader=sh;   // guardar referencia para actualizar tBackdrop/uResolution cada frame
-      sh.fragmentShader='uniform float uHover; uniform vec3 uNeon; uniform sampler2D tBackdrop; uniform vec2 uResolution;\n'+sh.fragmentShader;
+      sh.fragmentShader='uniform float uHover; uniform vec3 uNeon; uniform sampler2D tBackdrop; uniform vec2 uResolution; uniform vec2 uViewportResolution;\n'+sh.fragmentShader;
       // OJO: en esta versión de three, onBeforeCompile YA recibe los #include resueltos (no el
       // literal '#include <matcap_fragment>' — verificado volcando el shader real). Hay que
       // apuntar a la línea final tal cual la resuelve ShaderLib['matcap'], reusando sus var (uv/normal/viewDir).
@@ -932,9 +938,11 @@
         // superficie muestrea el mismo punto del matcap (se ve un rectángulo sólido, no vidrio)
         float jHash=fract(sin(dot(gl_FragCoord.xy,vec2(12.9898,78.233)))*43758.5453);
         // refracción falsa: la UV de pantalla se distorsiona con la normal (más en el borde por fresnel)
-        float distortAmt=0.06+fres*0.1;
-        vec2 screenUV=gl_FragCoord.xy/uResolution;
-        vec2 distortedUV=clamp(screenUV+(normal.xy+vec2(jHash-0.5)*0.15)*distortAmt, 0.002, 0.998);
+        float distortAmt=${(TIER.quality==='low'?0:.06).toFixed(3)}+fres*${(TIER.quality==='low'?0:.1).toFixed(3)};
+        // gl_FragCoord pertenece al framebuffer FINAL; uResolution pertenece al backdrop reducido.
+        // Mezclarlos desplazaba la muestra mobile hacia un costado y duplicaba el espiral.
+        vec2 screenUV=gl_FragCoord.xy/uViewportResolution;
+        vec2 distortedUV=clamp(screenUV+(normal.xy+vec2(jHash-0.5)*${(TIER.quality==='low'?.06:.15).toFixed(3)})*distortAmt, 0.002, 0.998);
         // FROSTING real: blur de N muestras según tier (no un espejo nítido) — así se nota que hay
         // materia detrás sin poder leerla con nitidez, como vidrio esmerilado de verdad.
         float blurAmt=0.008+fres*0.01;
@@ -942,14 +950,14 @@
         // Pedido de Agus: que las partículas/hilo REFRACTEN más a través del vidrio (más vívido,
         // no solo un tinte plano) — el vidrio ya deja pasar el fondo casi entero (matcapWeight
         // bajo), así que el lever real es la intensidad de lo que se ve DETRÁS, no la mezcla.
-        behind*=1.3;
+        behind*=${(TIER.quality==='low'?1.62:1.3).toFixed(2)};
         vec3 outgoingLight=mix(behind, diffuseColor.rgb*matcapColor.rgb, ${matcapWeight});  // el fondo domina, difuminado
         // Boost de hover moderado (antes 1.4/0.65): el vidrio se volvía TAN brillante que su
         // brillo se filtraba a través del texto (casi-opaco desde el fix de arriba) y bajaba el
         // contraste igual — "más brillo, no más contraste" (feedback de Agus). Con el texto ya
         // opaco, este boost solo debe iluminar el VIDRIO, no competir con la letra.
-        outgoingLight+=fres*vec3(0.97,0.92,0.85)*(0.22+uHover*0.9);     // rim cálido (antes blanco-cian), se dispara al hover
-        outgoingLight+=uNeon*(0.1+uHover*0.45)*${neonStrength};          // tinte de etapa SIEMPRE presente, se dispara al hover
+        outgoingLight+=fres*vec3(0.97,0.92,0.85)*(${(TIER.quality==='low'?.32:.22).toFixed(2)}+uHover*0.9);     // rim cálido (antes blanco-cian), se dispara al hover
+        outgoingLight+=uNeon*(${(TIER.quality==='low'?.16:.1).toFixed(2)}+uHover*0.45)*${neonStrength};          // tinte de etapa SIEMPRE presente, se dispara al hover
         diffuseColor.a=mix(diffuseColor.a,0.92,uHover);                  // más opaca/visible al hover
         `
       );
@@ -980,7 +988,7 @@
     plateMaterials.push(material);   // mismo array: resizeBgRT/renderBackdrop actualizan TODOS los materiales frosted
     const plate=new THREE.Mesh(caseGeo,material);
     plate.position.set(c.x, c.y, 0);
-    if(!PAIR_SIDE)plate.scale.setScalar(.70);
+    if(!PAIR_SIDE)plate.scale.setScalar(.82);
     scene.add(plate);
     return plate;
   });
@@ -1273,7 +1281,8 @@
     const w=Math.max(2,Math.round((canvas.width||2)*backdropScale));
     const h=Math.max(2,Math.round((canvas.height||2)*backdropScale));
     if(bgRT.width!==w||bgRT.height!==h){ bgRT.setSize(w,h);
-      plateMaterials.forEach(m=>{ if(m.userData.shader) m.userData.shader.uniforms.uResolution.value.set(w,h); }); }
+      plateMaterials.forEach(m=>{ if(m.userData.shader){m.userData.shader.uniforms.uResolution.value.set(w,h);
+        m.userData.shader.uniforms.uViewportResolution.value.set(canvas.width||2,canvas.height||2);} }); }
   }
   function renderBackdrop(){
     // Todo objeto que samplea bgRT debe quedar fuera de ESTE pase. Los diales tambien usan
@@ -1284,7 +1293,8 @@
     renderer.setRenderTarget(bgRT); renderer.render(scene,camera); renderer.setRenderTarget(null);
     backdropConsumers.forEach(p=>p.visible=true);
     plateMaterials.forEach(m=>{ if(m.userData.shader){ m.userData.shader.uniforms.tBackdrop.value=bgRT.texture;
-      m.userData.shader.uniforms.uResolution.value.set(bgRT.width,bgRT.height); } });
+      m.userData.shader.uniforms.uResolution.value.set(bgRT.width,bgRT.height);
+      m.userData.shader.uniforms.uViewportResolution.value.set(canvas.width||2,canvas.height||2); } });
   }
 
   // ---- Hilo de señal: reusa la MISMA curva que ya envuelven las partículas (una sola materia) ----
@@ -1422,7 +1432,8 @@
   // Son cinco escenas en total en vez de trece paradas individuales.
   const MOBILE_CLOUD_SCENES=[meanY(CLOUD_STATS.slice(0,2)),meanY(CLOUD_STATS.slice(2,4))];
   const MOBILE_METHOD_SCENES=[meanY(STAGES.slice(0,2)),meanY(STAGES.slice(1,3))];
-  const MOBILE_WORK_SCENES=[meanY(CASES.slice(0,3)),meanY(CASES.slice(3,6))-1.4];
+  const MOBILE_WORK_GROUPS=[[0,1],[2,5]];
+  const MOBILE_WORK_SCENES=MOBILE_WORK_GROUPS.map((ids,scene)=>ids.reduce((sum,i)=>sum+CASES[i].y,0)/ids.length-(scene===1?.5:0));
   // Mobile funciona como una exhibición de escenas, no como una cámara atada a cada píxel de
   // scroll. El documento selecciona un destino discreto; el resorte de cámara hace una sola
   // transición y se detiene exactamente sobre el objeto legible.
@@ -1600,9 +1611,14 @@
       const cloudScene=nearestScene(camLook.y,MOBILE_CLOUD_SCENES);
       const methodScene=nearestScene(camLook.y,MOBILE_METHOD_SCENES);
       const workScene=nearestScene(camLook.y,MOBILE_WORK_SCENES);
-      plates.forEach((p,i)=>fade(p,stageProximity[i],methodScene===0?+(i<2):+(i>0)));
-      casePlates.forEach((p,i)=>fade(p,caseProximity[i],workRelease*+(workScene===0?i<3:i>=3)));
-      cloudGroups.forEach((g,i)=>fade(g,cloudProximity[i],+(cloudScene===0?i<2:i>=2)));
+      const cloudMethodCut=(CLOUD_Y_END+STAGES[0].y)*.5;
+      const methodWorkCut=(STAGES.at(-1).y+CASES[0].y)*.5;
+      const cloudActive=camLook.y>cloudMethodCut;
+      const methodActive=camLook.y<=cloudMethodCut&&camLook.y>methodWorkCut;
+      const workActive=camLook.y<=methodWorkCut;
+      plates.forEach((p,i)=>{const active=methodActive&&(methodScene===0?i<2:i>0);fade(p,active?1:0)});
+      casePlates.forEach((p,i)=>{const active=workActive&&MOBILE_WORK_GROUPS[workScene].includes(i);fade(p,active?1:0,workRelease)});
+      cloudGroups.forEach((g,i)=>{const active=cloudActive&&(cloudScene===0?i<2:i>=2);fade(g,active?1:0)});
     }else{
       plates.forEach((p,i)=>fade(p,stageProximity[i]));
       casePlates.forEach((p,i)=>fade(p,caseProximity[i],workRelease));
