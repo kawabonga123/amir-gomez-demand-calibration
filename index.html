@@ -1086,6 +1086,9 @@
   // placas atenuaría todas a la vez (el fade es POR PLACA).
   const bodyTextMat=new THREE.MeshBasicMaterial({color:0xf2efe9, toneMapped:false, transparent:true});
   const eyebrowTextMat=new THREE.MeshBasicMaterial({color:0xff6a2b, toneMapped:false, transparent:true});
+  // Los pasos son navegación/metodología, no resultados: usan el cyan del sistema para separar
+  // funciones cromáticas. El naranja queda reservado para energía, métricas y conversión.
+  const stepTextMat=new THREE.MeshBasicMaterial({color:0x4dffd0, toneMapped:false, transparent:true});
   const BODY_TEXT_CURVES=TIER.quality==='low'?3:8;
   const DISPLAY_TEXT_CURVES=TIER.quality==='low'?4:14;
   const DISPLAY_TEXT_BEVEL=TIER.quality!=='low';
@@ -1190,7 +1193,7 @@
       });
       // Eyebrow ("Step 0N") + cuerpo (caption completo, wrappeado de verdad) — AMBOS geometría 3D,
       // hijos de la MISMA placa: una sola pieza, sin DOM, sin poder desincronizarse nunca.
-      addTextLines(plate, eyebrowTextMat, [s.step], 0.13, 0, 0.55, 2.4, 0.15);
+      addTextLines(plate, stepTextMat, [s.step], 0.13, 0, 0.55, 2.4, 0.15);
       const bodyLines=wrapText(s.caption, 0.15, 2.6);
       addTextLines(plate, bodyTextMat, bodyLines, 0.15, 0.225, 0.28, 2.6, 0.15);
     });
