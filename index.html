@@ -1433,15 +1433,20 @@
   const MOBILE_CLOUD_SCENES=[meanY(CLOUD_STATS.slice(0,2)),meanY(CLOUD_STATS.slice(2,4))];
   const MOBILE_METHOD_SCENES=[meanY(STAGES.slice(0,2)),meanY(STAGES.slice(1,3))];
   const MOBILE_WORK_GROUPS=[[0,1],[2,5]];
+  const MOBILE_SELECTED_CASES=MOBILE_WORK_GROUPS.flat();
   const MOBILE_WORK_SCENES=MOBILE_WORK_GROUPS.map((ids,scene)=>ids.reduce((sum,i)=>sum+CASES[i].y,0)/ids.length-(scene===1?.5:0));
   // Mobile funciona como una exhibición de escenas, no como una cámara atada a cada píxel de
   // scroll. El documento selecciona un destino discreto; el resorte de cámara hace una sola
   // transición y se detiene exactamente sobre el objeto legible.
   function mobileScene(p,ys){
-    p=Math.max(0,Math.min(.999999,p));
-    return ys[Math.min(ys.length-1,Math.floor(p*ys.length))];
+    // Recorrido continuo: los centros son referencias de composición, no puntos de encastre.
+    // smoothstep conserva aceleración/desaceleración orgánica sin secuestrar el scroll nativo.
+    p=Math.max(0,Math.min(1,p));
+    if(ys.length<2)return ys[0]??0;
+    const scaled=p*(ys.length-1),i=Math.min(ys.length-2,Math.floor(scaled));
+    let q=scaled-i;q=q*q*(3-2*q);
+    return lerp(ys[i],ys[i+1],q);
   }
-  const nearestScene=(y,ys)=>ys.reduce((best,v,i)=>Math.abs(y-v)<Math.abs(y-ys[best])?i:best,0);
   function updateFromScroll(){
     // uOrder: el caos se calibra durante el Hero (para cuando aparece la nube de señal, la
     // demanda ya está "ordenada" — refuerza el mensaje, no es solo decorativo).
@@ -1567,7 +1572,7 @@
   const cloudProximity=new Array(CLOUD_STATS.length).fill(0);
   function updateProximity(){
     const stageRange=PAIR_SIDE?5:7;
-    const caseRange=PAIR_SIDE?5:8;
+    const caseRange=PAIR_SIDE?5:5.8;
     for(let i=0;i<STAGES.length;i++) stageProximity[i]=Math.max(0,Math.min(1,1-Math.abs(camLook.y-STAGES[i].y)/stageRange));
     for(let i=0;i<CASES.length;i++) caseProximity[i]=Math.max(0,Math.min(1,1-Math.abs(camLook.y-CASES[i].y)/caseRange));
     // La constelacion ocupa apenas ~3 unidades: /5 mantiene sus cuatro diales presentes dentro de
@@ -1608,17 +1613,17 @@
       for(const e of mats) e.m.opacity=e.base*f;
     };
     if(!PAIR_SIDE){
-      const cloudScene=nearestScene(camLook.y,MOBILE_CLOUD_SCENES);
-      const methodScene=nearestScene(camLook.y,MOBILE_METHOD_SCENES);
-      const workScene=nearestScene(camLook.y,MOBILE_WORK_SCENES);
       const cloudMethodCut=(CLOUD_Y_END+STAGES[0].y)*.5;
       const methodWorkCut=(STAGES.at(-1).y+CASES[0].y)*.5;
       const cloudActive=camLook.y>cloudMethodCut;
       const methodActive=camLook.y<=cloudMethodCut&&camLook.y>methodWorkCut;
       const workActive=camLook.y<=methodWorkCut;
-      plates.forEach((p,i)=>{const active=methodActive&&(methodScene===0?i<2:i>0);fade(p,active?1:0)});
-      casePlates.forEach((p,i)=>{const active=workActive&&MOBILE_WORK_GROUPS[workScene].includes(i);fade(p,active?1:0,workRelease)});
-      cloudGroups.forEach((g,i)=>{const active=cloudActive&&(cloudScene===0?i<2:i>=2);fade(g,active?1:0)});
+      const mobileCaseFocus=prox=>{let q=Math.max(0,Math.min(1,(prox-.25)/.4));return q*q*(3-2*q)};
+      plates.forEach((p,i)=>{p.userData.mobileActive=methodActive;fade(p,methodActive?stageProximity[i]:0)});
+      casePlates.forEach((p,i)=>{const active=workActive&&MOBILE_SELECTED_CASES.includes(i);p.userData.mobileActive=active;
+        if(!active&&p.material.userData.uHover)p.material.userData.uHover.value=0;
+        fade(p,active?mobileCaseFocus(caseProximity[i]):0,workRelease)});
+      cloudGroups.forEach((g,i)=>{g.userData.mobileActive=cloudActive;fade(g,cloudActive?cloudProximity[i]:0)});
     }else{
       plates.forEach((p,i)=>fade(p,stageProximity[i]));
       casePlates.forEach((p,i)=>fade(p,caseProximity[i],workRelease));
@@ -1681,10 +1686,10 @@
     // placa protagonista puede raycastear una placa LEJANA (visualmente detrás) y encenderla a
     // full — rompiendo el focus por proximidad que acabamos de aplicar.
     plates.forEach((p,i)=>{
-      const target=TOUCH ? stageProximity[i]*0.55 : ((p===hoveredPlate)?stageProximity[i]:0);
+      const target=TOUCH ? (p.userData.mobileActive===false?0:stageProximity[i]*0.55) : ((p===hoveredPlate)?stageProximity[i]:0);
       p.material.userData.uHover.value+=(target-p.material.userData.uHover.value)*cameraEase; });
     casePlates.forEach((p,i)=>{
-      const target=TOUCH ? caseProximity[i]*0.55 : ((p===hoveredPlate)?caseProximity[i]:0);
+      const target=TOUCH ? (p.userData.mobileActive===false?0:caseProximity[i]*0.55) : ((p===hoveredPlate)?caseProximity[i]:0);
       p.material.userData.uHover.value+=(target-p.material.userData.uHover.value)*cameraEase; });
     // Backdrop cada frame. En low-tier su render target reducido evita alternancia visual y baja GPU.
     if(mainCanvasActive){

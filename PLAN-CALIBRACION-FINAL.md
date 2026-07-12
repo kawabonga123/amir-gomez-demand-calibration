@@ -398,3 +398,16 @@ Feedback de Agus: la última terna seguía justa, algunas composiciones parecía
 - Ambas piezas del grupo activo son protagonistas a opacidad base completa; el espiral se ve a través del vidrio, pero el texto ya no hereda la atenuación de una placa vecina.
 
 Evidencia Playwright 375×812: Method X `[0,0,0]`; Work final muestra exclusivamente casos `[2,5]`, ambos opacity `0.6`; segunda dupla completa; espiral refractado alineado; overflow 0 y consola limpia.
+
+## SCROLL MOBILE CONTINUO Y VIDRIOS VACÍOS ELIMINADOS — 2026-07-11
+
+Foto de dispositivo real de Agus: aunque no existía CSS scroll-snap, la cámara seguía saltando entre centros discretos y las composiciones parecían forzadas a encajar en el fold. Además aparecían placas de vidrio vacías arriba/abajo.
+
+- Los centros mobile dejan de ser destinos discretos. `mobileScene()` interpola continuamente con smoothstep entre referencias; el scroll nativo controla una trayectoria orgánica sin encastre.
+- Durante el paso pueden convivir una, dos o tres piezas con opacidades de proximidad. No existe una cantidad obligatoria por pantalla.
+- La causa de las placas vacías era un estado cruzado: el texto/material quedaba en opacity 0, pero el `uHover` automático de touch volvía a subir `diffuseColor.a` del vidrio descartado.
+- Cada objeto mobile registra `mobileActive`; los descartados reciben `uHover=0` inmediatamente y el loop touch no puede reactivarlos.
+- Work conserva solamente los cuatro casos curados; los índices descartados `[3,4]` mantienen material, texto y hover en cero durante todo el recorrido.
+- El rango de proximidad Work baja a 5,8 unidades y suma una ventana smoothstep 0,25→0,65: los extremos entran/salen progresivamente y nunca quedan más de tres placas por encima de opacity 0,1.
+
+Evidencia Playwright 375×812 en posiciones intermedias 37%/63% de Work: `camLook` recorre valores no discretos; casos descartados opacity `[3,4]=0`, hover `[3,4]=0`, `mobileActive=false`; al 37% sólo `[0,1,2]` superan opacity 0,1 mientras `$1M+` sale y `5.3X` empieza a entrar; overflow 0 y consola limpia.
