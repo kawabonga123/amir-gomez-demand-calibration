@@ -582,7 +582,7 @@
   // con bevel + el pase extra de renderBackdrop() son mucho más pesados de lo que era el tier
   // original — en gama baja/mobile se recorta el muestreo de blur y el bloom, no solo el DPR/count.
   const TIER=(()=>{
-    if(DEBUG_LOWTIER) return{dpr:1,count:600,quality:'low',blurTaps:1,bloom:0.28};
+    if(DEBUG_LOWTIER) return{dpr:1,count:600,quality:'low',blurTaps:5,bloom:0};
     // innerWidth/innerHeight (viewport real que se renderiza), NO screen.width/height (pantalla
     // física del dispositivo — en headless/algunos webviews da 0, y en desktop con ventana
     // angosta da el ancho del monitor entero, no el de la ventana: señal equivocada para el costo real).
@@ -593,7 +593,7 @@
     // y ESO es lo que se ve "extremadamente pixelado" (bloques visibles, no solo bordes dentados).
     // Subido en los 3 tiers — sigue MUY por debajo del dpr real del dispositivo (nunca full nativo,
     // eso sí tumbaría el fps que ya se cuidó este mismo día), pero corta la peor parte del escalado.
-    if(small) return{dpr:Math.min(devicePixelRatio,1.25),count:2400,quality:'low',blurTaps:1,bloom:0};
+    if(small) return{dpr:Math.min(devicePixelRatio,1.25),count:2400,quality:'low',blurTaps:5,bloom:0};
     if(TOUCH) return{dpr:Math.min(devicePixelRatio,1.75),count:8000,quality:'mid',blurTaps:3,bloom:0.38};
     return{dpr:Math.min(devicePixelRatio,2),count:9000,quality:'high',blurTaps:5,bloom:0.45};})();
   // Tier bajo (mobile) corre menos fps bajo carga → menos frames disponibles para que el lerp de
@@ -845,7 +845,7 @@
         // (UnrealBloomPass) a resolución de render reducida — se ve como un bloque duro, no un
         // brillo suave. Boost de tamaño más moderado (antes 0.9) para que el destello siga
         // notándose sin crear ese artefacto.
-        gl_PointSize=(aRnd*1.0+0.35)*(52.0/-mv.z)*(0.6+order*0.6)*(1.0+aBigZ*2.2)*(1.0+vTwinkle*0.4)*${(TIER.quality==='low'?1.18:1).toFixed(2)};
+        gl_PointSize=(aRnd*1.0+0.35)*(52.0/-mv.z)*(0.6+order*0.6)*(1.0+aBigZ*2.2)*(1.0+vTwinkle*0.4)*${(TIER.quality==='low'?2.25:1).toFixed(2)};
         gl_Position=projectionMatrix*mv;
       }`,
     fragmentShader:`
@@ -945,7 +945,7 @@
         vec2 distortedUV=clamp(screenUV+(normal.xy+vec2(jHash-0.5)*${(TIER.quality==='low'?.06:.15).toFixed(3)})*distortAmt, 0.002, 0.998);
         // FROSTING real: blur de N muestras según tier (no un espejo nítido) — así se nota que hay
         // materia detrás sin poder leerla con nitidez, como vidrio esmerilado de verdad.
-        float blurAmt=0.008+fres*0.01;
+        float blurAmt=${(TIER.quality==='low'?.018:.008).toFixed(3)}+fres*${(TIER.quality==='low'?.022:.01).toFixed(3)};
         ${behindCode}
         // Pedido de Agus: que las partículas/hilo REFRACTEN más a través del vidrio (más vívido,
         // no solo un tinte plano) — el vidrio ya deja pasar el fondo casi entero (matcapWeight
@@ -1435,9 +1435,9 @@
   const MOBILE_WORK_GROUPS=[[0,1],[2,5]];
   const MOBILE_SELECTED_CASES=MOBILE_WORK_GROUPS.flat();
   const MOBILE_WORK_SCENES=MOBILE_WORK_GROUPS.map((ids,scene)=>ids.reduce((sum,i)=>sum+CASES[i].y,0)/ids.length-(scene===1?.5:0));
-  // Mobile funciona como una exhibición de escenas, no como una cámara atada a cada píxel de
-  // scroll. El documento selecciona un destino discreto; el resorte de cámara hace una sola
-  // transición y se detiene exactamente sobre el objeto legible.
+  const MOBILE_JOURNEY_SCENES=[0,...MOBILE_CLOUD_SCENES,...MOBILE_METHOD_SCENES,...MOBILE_WORK_SCENES];
+  // Mobile funciona como una exhibición de escenas sobre un único recorrido continuo. Los centros
+  // son referencias de composición: no hay scroll-snap, destinos discretos ni cortes por sección.
   function mobileScene(p,ys){
     // Recorrido continuo: los centros son referencias de composición, no puntos de encastre.
     // smoothstep conserva aceleración/desaceleración orgánica sin secuestrar el scroll nativo.
@@ -1474,7 +1474,19 @@
     camTargetZ=lerp(9, 5.2, zProgress)*aspectZScale();
     // camLookTargetY SÍ necesita trackear contenido real → mapeo por tramos, uno por sección DOM.
     const methodTop=methodEl.offsetTop, workTop=workEl.offsetTop;
-    if(travelY<methodTop){
+    const mobileReadableEnd=journeyBottom-innerHeight*.18;
+    const mobileExitEnd=journeyBottom+innerHeight*.12;
+    if(!PAIR_SIDE){
+      if(travelY<=mobileReadableEnd){
+        workRelease=1;
+        const p=Math.max(0,Math.min(1,(travelY-journeyTop)/Math.max(1,mobileReadableEnd-journeyTop)));
+        camLookTargetY=mobileScene(p,MOBILE_JOURNEY_SCENES);
+      }else{
+        const exitP=Math.max(0,Math.min(1,(travelY-mobileReadableEnd)/Math.max(1,mobileExitEnd-mobileReadableEnd)));
+        workRelease=1-exitP;
+        camLookTargetY=lerp(MOBILE_JOURNEY_SCENES.at(-1),lastPlateY,exitP);
+      }
+    }else if(travelY<methodTop){
       const p=Math.max(0,Math.min(1,(travelY-journeyTop)/Math.max(1,methodTop-journeyTop)));
       camLookTargetY = p<CLOUD_APPROACH_FRAC
         ? lerp(0, CLOUD_Y_START, p/CLOUD_APPROACH_FRAC)
@@ -1487,8 +1499,8 @@
     }else{
       // El último caso debe llegar al centro ANTES de que Case context entre a taparlo. Mapear
       // hasta el bottom físico de Work lo enfocaba recién cuando el bloque opaco ya estaba arriba.
-      const workReadableEnd=!PAIR_SIDE?journeyBottom-innerHeight*.18:journeyBottom-innerHeight*.90;
-      const workExitEnd=!PAIR_SIDE?journeyBottom+innerHeight*.12:journeyBottom-innerHeight*.60;
+      const workReadableEnd=journeyBottom-innerHeight*.90;
+      const workExitEnd=journeyBottom-innerHeight*.60;
       if(travelY<=workReadableEnd){
         workRelease=1;
         const p=Math.max(0,Math.min(1,(travelY-workTop)/Math.max(1,workReadableEnd-workTop)));
@@ -1613,17 +1625,12 @@
       for(const e of mats) e.m.opacity=e.base*f;
     };
     if(!PAIR_SIDE){
-      const cloudMethodCut=(CLOUD_Y_END+STAGES[0].y)*.5;
-      const methodWorkCut=(STAGES.at(-1).y+CASES[0].y)*.5;
-      const cloudActive=camLook.y>cloudMethodCut;
-      const methodActive=camLook.y<=cloudMethodCut&&camLook.y>methodWorkCut;
-      const workActive=camLook.y<=methodWorkCut;
       const mobileCaseFocus=prox=>{let q=Math.max(0,Math.min(1,(prox-.25)/.4));return q*q*(3-2*q)};
-      plates.forEach((p,i)=>{p.userData.mobileActive=methodActive;fade(p,methodActive?stageProximity[i]:0)});
-      casePlates.forEach((p,i)=>{const active=workActive&&MOBILE_SELECTED_CASES.includes(i);p.userData.mobileActive=active;
+      plates.forEach((p,i)=>{p.userData.mobileActive=true;fade(p,stageProximity[i])});
+      casePlates.forEach((p,i)=>{const active=MOBILE_SELECTED_CASES.includes(i);p.userData.mobileActive=active;
         if(!active&&p.material.userData.uHover)p.material.userData.uHover.value=0;
         fade(p,active?mobileCaseFocus(caseProximity[i]):0,workRelease)});
-      cloudGroups.forEach((g,i)=>{g.userData.mobileActive=cloudActive;fade(g,cloudActive?cloudProximity[i]:0)});
+      cloudGroups.forEach((g,i)=>{g.userData.mobileActive=true;fade(g,cloudProximity[i])});
     }else{
       plates.forEach((p,i)=>fade(p,stageProximity[i]));
       casePlates.forEach((p,i)=>fade(p,caseProximity[i],workRelease));

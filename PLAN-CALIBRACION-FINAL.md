@@ -411,3 +411,14 @@ Foto de dispositivo real de Agus: aunque no existía CSS scroll-snap, la cámara
 - El rango de proximidad Work baja a 5,8 unidades y suma una ventana smoothstep 0,25→0,65: los extremos entran/salen progresivamente y nunca quedan más de tres placas por encima de opacity 0,1.
 
 Evidencia Playwright 375×812 en posiciones intermedias 37%/63% de Work: `camLook` recorre valores no discretos; casos descartados opacity `[3,4]=0`, hover `[3,4]=0`, `mobileActive=false`; al 37% sólo `[0,1,2]` superan opacity 0,1 mientras `$1M+` sale y `5.3X` empieza a entrar; overflow 0 y consola limpia.
+
+## TRAYECTORIA MOBILE ÚNICA + FROST Y PARTÍCULAS AMPLIFICADOS — 2026-07-12
+
+La interpolación interna ya era continua, pero seguían existiendo dos discontinuidades estructurales: Signal, Method y Work calculaban la cámara en rangos DOM separados. Al cruzar sus límites el destino saltaba 8–9 unidades, por lo que un gesto normal parecía omitir contenido aunque cada tramo aislado fuera suave.
+
+- Mobile usa una sola trayectoria `MOBILE_JOURNEY_SCENES` desde el hero hasta el último caso. Los centros son referencias de composición unidas por smoothstep, no snaps ni destinos obligatorios.
+- Se eliminaron las compuertas binarias entre Cloud, Method y Work. La convivencia y salida de objetos depende exclusivamente de distancia real a la cámara; los dos casos descartados siguen bloqueados con opacity y hover en cero.
+- El frost mobile pasa de una muestra a cinco, con radio base 0,018 y fresnel adicional 0,022. Recupera desenfoque material sin reintroducir postprocesado.
+- El tamaño de partículas low-tier sube de 1,18× a 2,25×. Cantidad, DPR y render directo permanecen iguales para no alterar el presupuesto de GPU.
+
+Evidencia local Playwright 375×812: alrededor de ambos límites anteriores, muestras cada 2 px avanzan monotónicamente y sin salto (Signal→Method: -14,45 a -14,87; Method→Work: -23,38 a -23,88). Con CPU throttle 4× y frost de cinco muestras: p50 6,9 ms, p95 7 ms, máximo 7,1 ms, 0 frames >20 ms, overflow 0 y consola limpia. Desktop 1440×900 conserva tier high, 9.000 partículas, bloom 0,45 y posiciones originales.
