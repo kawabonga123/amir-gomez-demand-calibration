@@ -422,3 +422,13 @@ La interpolación interna ya era continua, pero seguían existiendo dos disconti
 - El tamaño de partículas low-tier sube de 1,18× a 2,25×. Cantidad, DPR y render directo permanecen iguales para no alterar el presupuesto de GPU.
 
 Evidencia local Playwright 375×812: alrededor de ambos límites anteriores, muestras cada 2 px avanzan monotónicamente y sin salto (Signal→Method: -14,45 a -14,87; Method→Work: -23,38 a -23,88). Con CPU throttle 4× y frost de cinco muestras: p50 6,9 ms, p95 7 ms, máximo 7,1 ms, 0 frames >20 ms, overflow 0 y consola limpia. Desktop 1440×900 conserva tier high, 9.000 partículas, bloom 0,45 y posiciones originales.
+
+## COLCHÓN DE LECTURA ANTES DE LA MEMBRANA — 2026-07-12
+
+Captura real de Agus en desktop: el último par de Work llegaba completo demasiado cerca de Case context y la cresta ondulada tapaba el final del cuerpo mientras todavía se leía.
+
+- La pose final se adelanta de 0,90 a 1,30 viewports antes del límite físico de Work.
+- La fase de disolución termina a 0,82 viewports del límite; la membrana recibe únicamente el eje de partículas, no placas con copy activo.
+- No se modifica la altura de las placas, la onda ni el recorrido mobile.
+
+Evidencia Playwright 2048×975: en la pose legible, Case context comienza en y=1266 px —291 px debajo del viewport— y ambas placas entran completas. Al finalizar la salida, Case context está en y=798 px y las dos placas ya tienen opacity 0. Overflow horizontal 0. Mobile 375×812 conserva el tier low, el mismo recorrido y overflow 0.

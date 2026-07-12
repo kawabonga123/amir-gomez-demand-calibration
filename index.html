@@ -1499,8 +1499,12 @@
     }else{
       // El último caso debe llegar al centro ANTES de que Case context entre a taparlo. Mapear
       // hasta el bottom físico de Work lo enfocaba recién cuando el bloque opaco ya estaba arriba.
-      const workReadableEnd=journeyBottom-innerHeight*.90;
-      const workExitEnd=journeyBottom-innerHeight*.60;
+      // La membrana sobresale hasta ~210 px por encima de Case context. Con la pose final a .90vh,
+      // su cresta ya invadía el tercio inferior de las placas antes de terminar de leerlas. El
+      // último par ahora llega completo 1.30 pantallas antes del corte y dispone de una salida
+      // independiente; la membrana absorbe una escena ya leída, nunca el cuerpo del copy.
+      const workReadableEnd=journeyBottom-innerHeight*1.30;
+      const workExitEnd=journeyBottom-innerHeight*.82;
       if(travelY<=workReadableEnd){
         workRelease=1;
         const p=Math.max(0,Math.min(1,(travelY-workTop)/Math.max(1,workReadableEnd-workTop)));
