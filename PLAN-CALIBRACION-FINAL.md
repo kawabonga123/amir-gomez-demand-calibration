@@ -432,3 +432,13 @@ Captura real de Agus en desktop: el último par de Work llegaba completo demasia
 - No se modifica la altura de las placas, la onda ni el recorrido mobile.
 
 Evidencia Playwright 2048×975: en la pose legible, Case context comienza en y=1266 px —291 px debajo del viewport— y ambas placas entran completas. Al finalizar la salida, Case context está en y=798 px y las dos placas ya tienen opacity 0. Overflow horizontal 0. Mobile 375×812 conserva el tier low, el mismo recorrido y overflow 0.
+
+## COLCHÓN MOBILE PARA EL ÚLTIMO CASO — 2026-07-12
+
+Captura de dispositivo real: la membrana mobile todavía alcanzaba el cuerpo inferior de `5.3X` antes de que la placa terminara su lectura.
+
+- Work suma 24svh de padding exclusivamente después de la última composición.
+- Los límites internos se compensan en esos mismos 24svh: las placas aparecen en exactamente el mismo punto y con la misma velocidad; sólo Case context se desplaza físicamente hacia abajo.
+- Al finalizar el colchón, las placas ya están disueltas y la onda conserva el eje de partículas como transición.
+
+Evidencia Playwright 375×812: en la pose final, Case context comienza en y=746,6 px y las placas `7X/5.3X` entran completas a opacity 0,6. Al terminar la salida, Case context está en y=502,6 px y las seis placas tienen opacity 0. Overflow 0. Desktop conserva su padding de 14svh, tier high y posiciones originales.

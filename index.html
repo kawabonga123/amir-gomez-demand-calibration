@@ -183,6 +183,9 @@
     #signal .stage{min-height:40svh!important}
     #method .stage{min-height:8.333svh}
     body.pairs-stack #work .stage{min-height:33.333svh}
+    /* Colchón exclusivo de salida: desplaza Case context 24svh sin cambiar dónde aparece ni la
+       velocidad de ninguna composición 3D anterior. La última placa puede salir completa. */
+    #work{padding-bottom:24svh}
     .hero{transition:opacity .28s var(--ease)}
     body.journey-active .hero{opacity:0;pointer-events:none}
     /* La ola desktop necesita ~200px de profundidad; en 375px invadía la última terna antes
@@ -1477,8 +1480,10 @@
     camTargetZ=lerp(9, 5.2, zProgress)*aspectZScale();
     // camLookTargetY SÍ necesita trackear contenido real → mapeo por tramos, uno por sección DOM.
     const methodTop=methodEl.offsetTop, workTop=workEl.offsetTop;
-    const mobileReadableEnd=journeyBottom-innerHeight*.18;
-    const mobileExitEnd=journeyBottom+innerHeight*.12;
+    // El padding mobile suma 24svh y estos offsets compensan exactamente ese espacio: el último
+    // caso llega en el mismo punto de scroll que antes, pero la membrana física queda 24svh abajo.
+    const mobileReadableEnd=journeyBottom-innerHeight*.42;
+    const mobileExitEnd=journeyBottom-innerHeight*.12;
     if(!PAIR_SIDE){
       if(travelY<=mobileReadableEnd){
         workRelease=1;
