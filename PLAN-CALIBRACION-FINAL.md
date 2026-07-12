@@ -369,3 +369,18 @@ Replanteo desde primeros principios: el problema no era solamente cantidad de pa
 - El eje y las partículas conservan 62% de intensidad durante lectura (antes se apagaban al 10%), para que el vidrio nunca parezca una tarjeta aislada sobre negro.
 
 Evidencia local Playwright 375×812: dos capturas separadas 700 ms sobre la misma placa tienen hashes distintos y muestran posiciones diferentes del espiral; fondo, refracción y placa permanecen unidos. Con CPU throttle 4× y seis gestos de 480 px: p95 7 ms, máximo 13,9 ms y 0 frames >20 ms en el entorno automatizado. La cámara termina en el destino exacto, overflow 0 y consola limpia. Desktop queda fuera de esta bifurcación.
+
+## COMPRESIÓN MOBILE 4× Y COMPOSICIONES AGRUPADAS — 2026-07-11
+
+Feedback de Agus: la nueva exhibición era estable, pero trece escenas individuales seguían consumiendo demasiada atención. Hero y todo desde Case context estaban bien; sólo Signal + Method + Work debían quedar cerca de un cuarto de su longitud.
+
+- El tramo intermedio baja de ~643svh a 165svh: 25,7% del original. Signal 40svh, Method 25svh y Work 100svh.
+- Trece paradas pasan a cinco composiciones: dos diales, dos pasos y tres casos por encuadre.
+- Las ternas Work también se compactan en el mundo 3D: centros cada 2,55 unidades, escala 0,70 y el hilo recalculado por el centro real de cada par.
+- El mapeo mobile usa el centro del viewport (`travelY`) porque las nuevas secciones son menores que una pantalla; desktop conserva su coordenada de scroll original.
+- El grupo activo tiene una máscara exacta: vecinos de otra composición quedan en opacity 0, sin placas fantasma.
+- Hero se retira al comenzar el viaje 3D para que CTA y primer grupo no compitan.
+- La membrana de entrada a Case context se comprime a 72–104 px en mobile y la última terna se encuadra por encima; desktop conserva la ola profunda original.
+- `prefers-reduced-motion` muestra las mismas composiciones agrupadas congeladas: varias piezas, eje, partículas y refracción estática, no una placa solitaria sobre negro.
+
+Evidencia Playwright 375×812: longitud medida 1,6502 viewports, grupos 2/2/3 completos, segunda terna Work visible sobre la membrana, reduced-motion activo con composición completa, overflow 0 y consola limpia.
