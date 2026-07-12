@@ -354,3 +354,18 @@ La primera curva orgánica seguía leyéndose como una línea dibujada y el rele
 - `prefers-reduced-motion` congela la respiración sin quitar la profundidad ni el blur.
 
 Evidencia Playwright: desktop 2048×975 y mobile 375×812, últimas placas en opacity 0 durante la entrada, espiral continuo hasta la membrana, overflow 0 y consola sin errores.
+
+## MOBILE COMO EXHIBICIÓN 3D, NO TIMELINE DE SCROLL — 2026-07-11
+
+El intento de optimización anterior (fondo frosted congelado durante el gesto, cámara directa y poses retenidas) fue rechazado en dispositivo real: producía gris/parpadeo, placas separadas del mundo y una escena sin vida. Se revirtió completo antes de esta implementación.
+
+Replanteo desde primeros principios: el problema no era solamente cantidad de partículas. Mobile estaba usando un documento con inercia como timeline continua de una cámara 3D; con cualquier caída de rendimiento quedaba entre dos estados y no funcionaba ni como lectura ni como película.
+
+- Portrait conserva el mismo mundo, objetos, contenido, eje y materiales, pero el scroll selecciona escenas discretas (`mobileScene`) en Signal, Method y Work.
+- La cámara hace una transición breve con respuesta 14 hacia el último destino solicitado y se detiene exactamente sobre un objeto. Un gesto rápido omite estados intermedios en lugar de intentar representarlos tarde.
+- Cada frame mobile es atómico: primero se renderiza el fondo fresco para refracción y luego la escena final. Nunca se reutiliza una textura vieja mientras la cámara cambia.
+- Mobile usa render directo con MSAA nativo, sin la cadena de cuatro superficies/pases de EffectComposer. Desktop conserva bloom + SMAA y su coreografía continua.
+- Mobile entrega un cuadro completo en cada `requestAnimationFrame`, con 2.400 partículas, DPR 1,25 y backdrop 55% por eje. No se alternan partes de la escena ni se impone un cap de 30 fps que pueda sentirse entrecortado en pantallas de 60/120 Hz.
+- El eje y las partículas conservan 62% de intensidad durante lectura (antes se apagaban al 10%), para que el vidrio nunca parezca una tarjeta aislada sobre negro.
+
+Evidencia local Playwright 375×812: dos capturas separadas 700 ms sobre la misma placa tienen hashes distintos y muestran posiciones diferentes del espiral; fondo, refracción y placa permanecen unidos. Con CPU throttle 4× y seis gestos de 480 px: p95 7 ms, máximo 13,9 ms y 0 frames >20 ms en el entorno automatizado. La cámara termina en el destino exacto, overflow 0 y consola limpia. Desktop queda fuera de esta bifurcación.

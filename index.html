@@ -579,13 +579,13 @@
     // y ESO es lo que se ve "extremadamente pixelado" (bloques visibles, no solo bordes dentados).
     // Subido en los 3 tiers — sigue MUY por debajo del dpr real del dispositivo (nunca full nativo,
     // eso sí tumbaría el fps que ya se cuidó este mismo día), pero corta la peor parte del escalado.
-    if(small) return{dpr:Math.min(devicePixelRatio,1.35),count:3000,quality:'low',blurTaps:1,bloom:0.18};
+    if(small) return{dpr:Math.min(devicePixelRatio,1.25),count:2400,quality:'low',blurTaps:1,bloom:0};
     if(TOUCH) return{dpr:Math.min(devicePixelRatio,1.75),count:8000,quality:'mid',blurTaps:3,bloom:0.38};
     return{dpr:Math.min(devicePixelRatio,2),count:9000,quality:'high',blurTaps:5,bloom:0.45};})();
   // Tier bajo (mobile) corre menos fps bajo carga → menos frames disponibles para que el lerp de
   // cámara alcance su target, lo que se percibe como "el scroll responde lento/con gap". Compensar
   // con un lerp más agresivo por frame (12% vs 6%) cierra la distancia en menos frames.
-  const CAM_RESPONSE=TIER.quality==='low'?7.7:5.0;
+  const CAM_RESPONSE=TIER.quality==='low'?14:5.0;
   // Work: ¿los 2 casos de cada par van lado a lado (desktop/tablet) o apilados centrados
   // (mobile angosto)? Decidido UNA vez al cargar (mismo patrón que TIER) — lado a lado necesita
   // presupuesto de frustum horizontal que un portrait angosto no tiene (ver CASES más abajo).
@@ -838,7 +838,7 @@
         vec3 signalCol=vec3(1.35,0.46,0.16);  // señal calibrada: naranja de marca A+ Growth, HDR
         vec3 col=mix(chaosCol,signalCol,vOrder);
         col+=vTwinkle*vec3(1.1,0.9,0.6);       // destello: pico HDR por encima de 1.0 (el bloom lo agarra), moderado
-        float readingFade=1.0-uReadFocus*0.9;
+        float readingFade=1.0-uReadFocus*${(TIER.quality==='low'?.38:.9).toFixed(2)};
         gl_FragColor=vec4(col*readingFade, min(1.0,a+vTwinkle*0.3)*readingFade);
       }`});
   const points=new THREE.Points(geo,mat); scene.add(points);
@@ -1237,7 +1237,7 @@
     // (?shot no arranca el loop rAF, nada vuelve a dibujar). Re-renderizar una vez acá si SHOT.
     if(SHOT){
       updateProximity(); applyFocusFade();
-      camera.lookAt(camLook); renderBackdrop(); composer.render();
+      camera.lookAt(camLook); renderBackdrop(); renderScene();
     }
   }, undefined, (err)=>{
     document.documentElement.classList.add('webgl-failed');
@@ -1281,18 +1281,23 @@
         float base=0.28;
         float e=base+dash*0.55+ring*0.3;
         vec3 col=mix(vec3(0.85,0.38,0.16),vec3(1.0,0.78,0.58),dash*0.7+ring*0.4);  // naranja de marca (antes cian)
-        float readingFade=1.0-uReadFocus*0.9;
+        float readingFade=1.0-uReadFocus*${(TIER.quality==='low'?.38:.9).toFixed(2)};
         gl_FragColor=vec4(col*e*readingFade, clamp(e,0.12,0.85)*readingFade);
       }`
   });
   const thread=new THREE.Mesh(new THREE.TubeGeometry(threadCurve,220,0.014,8,false),threadMat);
   scene.add(thread);
 
-  const composer=new EffectComposer(renderer);
-  composer.addPass(new RenderPass(scene,camera));
-  if(TIER.bloom>0&&!new URLSearchParams(location.search).has('nobloom')){   // TEMP DEBUG: ?nobloom para aislar el shader del bloom
-    composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),TIER.bloom,0.4,0.3));
-  }
+  // Mobile usa una ruta directa y coherente: backdrop fresco + escena final en el mismo tick.
+  // Evita cuatro superficies/pases de postproceso y permite que el MSAA nativo del renderer haga
+  // su trabajo. Desktop conserva el composer completo con bloom + SMAA.
+  const DIRECT_MOBILE=TIER.quality==='low';
+  const composer=DIRECT_MOBILE?null:new EffectComposer(renderer);
+  if(composer){
+    composer.addPass(new RenderPass(scene,camera));
+    if(TIER.bloom>0&&!new URLSearchParams(location.search).has('nobloom')){
+      composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),TIER.bloom,0.4,0.3));
+    }
   // BUG real señalado por Agus con captura: los anillos/ticks/texto se ven pixelados, con bordes
   // dentados — `renderer:{antialias:true}` NO hace nada acá porque el render pasa por
   // EffectComposer (renderiza a un WebGLRenderTarget propio, sin MSAA, y el antialias del
@@ -1302,15 +1307,17 @@
   // dejaba el caso más común (mobile) sin NINGÚN anti-aliasing — bordes de dígitos y ticks del
   // dial se ven en escalera. SMAA es un solo pase full-screen, barato incluso en mobile (no es
   // MSAA real ni el blur de 5 muestras del frostGlass) — se corre siempre, sin gate de tier.
-  composer.addPass(new SMAAPass(innerWidth*renderer.getPixelRatio(), innerHeight*renderer.getPixelRatio()));
-  composer.addPass(new OutputPass());
+    composer.addPass(new SMAAPass(innerWidth*renderer.getPixelRatio(), innerHeight*renderer.getPixelRatio()));
+    composer.addPass(new OutputPass());
+  }
+  function renderScene(){if(DIRECT_MOBILE)renderer.render(scene,camera);else composer.render();}
 
   // Encuadre de cámara pensado para aspecto de escritorio (ancho). En un celular vertical
   // (aspecto angosto) el frustum HORIZONTAL se comprime mucho a la misma distancia — las placas
   // quedarían gigantes/recortadas. Compensamos alejando la cámara en proporción inversa al
   // aspecto (referencia ~1.6, típico desktop), clampeado para no exagerar en pantallas ultra-anchas.
   function aspectZScale(){ return Math.min(PAIR_SIDE?2.3:2.55, Math.max(1, 1.6/camera.aspect)); }
-  function fit(){renderer.setSize(innerWidth,innerHeight);composer.setSize(innerWidth,innerHeight);
+  function fit(){renderer.setSize(innerWidth,innerHeight);if(composer)composer.setSize(innerWidth,innerHeight);
     camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix(); resizeBgRT();}
   fit(); addEventListener('resize',fit);
   let pairResizeTimer;
@@ -1390,6 +1397,13 @@
   // antes de llegar a Method (perturbación de <2% del recorrido total en progress~0.05).
   const HERO_CAM_Y=1.6;
   let progress=0, camTargetY=HERO_CAM_Y, camTargetZ=9, camLookTargetY=0, mainCanvasActive=true, workRelease=1;
+  // Mobile funciona como una exhibición de escenas, no como una cámara atada a cada píxel de
+  // scroll. El documento selecciona un destino discreto; el resorte de cámara hace una sola
+  // transición y se detiene exactamente sobre el objeto legible.
+  function mobileScene(p,ys){
+    p=Math.max(0,Math.min(.999999,p));
+    return ys[Math.min(ys.length-1,Math.floor(p*ys.length))];
+  }
   function updateFromScroll(){
     // uOrder: el caos se calibra durante el Hero (para cuando aparece la nube de señal, la
     // demanda ya está "ordenada" — refuerza el mensaje, no es solo decorativo).
@@ -1418,10 +1432,12 @@
       const p=Math.max(0,Math.min(1,(scrollY-journeyTop)/Math.max(1,methodTop-journeyTop)));
       camLookTargetY = p<CLOUD_APPROACH_FRAC
         ? lerp(0, CLOUD_Y_START, p/CLOUD_APPROACH_FRAC)
-        : lerp(CLOUD_Y_START, CLOUD_Y_END, (p-CLOUD_APPROACH_FRAC)/(1-CLOUD_APPROACH_FRAC));
+        : (!PAIR_SIDE
+          ? mobileScene((p-CLOUD_APPROACH_FRAC)/(1-CLOUD_APPROACH_FRAC),CLOUD_STATS.map(s=>s.y))
+          : lerp(CLOUD_Y_START, CLOUD_Y_END, (p-CLOUD_APPROACH_FRAC)/(1-CLOUD_APPROACH_FRAC)));
     }else if(scrollY<workTop){
       const p=Math.max(0,Math.min(1,(scrollY-methodTop)/Math.max(1,workTop-methodTop)));
-      camLookTargetY=lerp(CLOUD_Y_END, METHOD_Y_END, p);
+      camLookTargetY=!PAIR_SIDE?mobileScene(p,STAGES.map(s=>s.y)):lerp(CLOUD_Y_END, METHOD_Y_END, p);
     }else{
       // El último caso debe llegar al centro ANTES de que Case context entre a taparlo. Mapear
       // hasta el bottom físico de Work lo enfocaba recién cuando el bloque opaco ya estaba arriba.
@@ -1430,7 +1446,7 @@
       if(scrollY<=workReadableEnd){
         workRelease=1;
         const p=Math.max(0,Math.min(1,(scrollY-workTop)/Math.max(1,workReadableEnd-workTop)));
-        camLookTargetY=lerp(METHOD_Y_END,lastPlateY,p);
+        camLookTargetY=!PAIR_SIDE?mobileScene(p,CASES.map(c=>c.y)):lerp(METHOD_Y_END,lastPlateY,p);
       }else{
         // Las placas se disuelven, pero el objeto-eje NO se desplaza: continúa hasta quedar
         // físicamente debajo de la membrana borrosa de Case context, sin una punta cortada.
@@ -1618,7 +1634,7 @@
     // Backdrop cada frame. En low-tier su render target reducido evita alternancia visual y baja GPU.
     if(mainCanvasActive){
       renderBackdrop();
-      composer.render();
+      renderScene();
     }
     frames++;
     // Reduced motion conserva el recorrido espacial pero sin deriva, spin ni twinkle; el canvas
@@ -1640,13 +1656,13 @@
       const readFocus=Math.max(...stageProximity,...caseProximity,...cloudProximity);
       uniforms.uReadFocus.value=readFocus; threadUniforms.uReadFocus.value=readFocus;
       applyFocusFade();
-      camera.lookAt(camLook); renderBackdrop(); composer.render();
+      camera.lookAt(camLook); renderBackdrop(); renderScene();
     }
     console.log('[amir] shot listo (sync)');
   } else render();
-  if(params.has('debug')) window.__amirDebug={camera,plates,casePlates,cloudGroups,STAGES,CASES,CASE_PAIRS,CLOUD_STATS,PAIR_SIDE,aspectZScale,TIER,TOUCH,
+  if(params.has('debug')) window.__amirDebug={camera,plates,casePlates,cloudGroups,STAGES,CASES,CASE_PAIRS,CLOUD_STATS,PAIR_SIDE,aspectZScale,TIER,TOUCH,DIRECT_MOBILE,
     updateFromScroll,methodEl,workEl,heroEl,camLook,get progress(){return progress},get camTargetY(){return camTargetY},
-    get camTargetZ(){return camTargetZ},get uOrder(){return uniforms.uOrder.value},get backdropSize(){return [bgRT.width,bgRT.height]}}; // solo verificación
+    get camTargetZ(){return camTargetZ},get frames(){return frames},get uOrder(){return uniforms.uOrder.value},get backdropSize(){return [bgRT.width,bgRT.height]}}; // solo verificación
   console.log('[amir] hero + método + work listo ·',N,'partículas ·',STAGES.length,'placas method ·',CASES.length,'placas work');
   </script>
   <script>
