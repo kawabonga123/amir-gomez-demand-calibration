@@ -442,3 +442,13 @@ Captura de dispositivo real: la membrana mobile todavía alcanzaba el cuerpo inf
 - Al finalizar el colchón, las placas ya están disueltas y la onda conserva el eje de partículas como transición.
 
 Evidencia Playwright 375×812: en la pose final, Case context comienza en y=746,6 px y las placas `7X/5.3X` entran completas a opacity 0,6. Al terminar la salida, Case context está en y=502,6 px y las seis placas tienen opacity 0. Overflow 0. Desktop conserva su padding de 14svh, tier high y posiciones originales.
+
+## BLOOM SELECTIVO PARA RECUPERAR LEGIBILIDAD — 2026-07-13
+
+Antes de la entrega final, Agus señaló que el glow de las placas lavaba el contenido. La comparación con y sin postprocesado confirmó que el frost no era la causa principal: el `UnrealBloomPass` usaba threshold `0.30` y capturaba también la tipografía crema, generando un halo alrededor de cada letra.
+
+- Iteración 1: bloom high `0.45→0.32`, mid `0.38→0.28`, threshold `0.82` y radius `0.34`. Mejoró los bordes, pero todavía había neblina perceptible en el cuerpo.
+- Iteración 2 final: threshold `0.96` y radius `0.28`. La tipografía y el vidrio normal quedan debajo del umbral; únicamente las partículas HDR y los reflejos extremos florecen.
+- Mobile pequeño conserva render directo sin bloom y no cambia visualmente.
+
+Evidencia Playwright: desktop 1440×900 muestra títulos, labels y cuerpo con bordes equivalentes a la referencia `nobloom`, mientras el eje conserva brillo cálido. Mobile 375×812 mantiene la composición completa, overflow 0 y consola sin errores. Con CPU throttle 4×: p95 7,1 ms, 2 frames aislados >20 ms en 120 muestras y máximo 27,8 ms.

@@ -597,8 +597,8 @@
     // Subido en los 3 tiers — sigue MUY por debajo del dpr real del dispositivo (nunca full nativo,
     // eso sí tumbaría el fps que ya se cuidó este mismo día), pero corta la peor parte del escalado.
     if(small) return{dpr:Math.min(devicePixelRatio,1.25),count:2400,quality:'low',blurTaps:5,bloom:0};
-    if(TOUCH) return{dpr:Math.min(devicePixelRatio,1.75),count:8000,quality:'mid',blurTaps:3,bloom:0.38};
-    return{dpr:Math.min(devicePixelRatio,2),count:9000,quality:'high',blurTaps:5,bloom:0.45};})();
+    if(TOUCH) return{dpr:Math.min(devicePixelRatio,1.75),count:8000,quality:'mid',blurTaps:3,bloom:0.28};
+    return{dpr:Math.min(devicePixelRatio,2),count:9000,quality:'high',blurTaps:5,bloom:0.32};})();
   // Tier bajo (mobile) corre menos fps bajo carga → menos frames disponibles para que el lerp de
   // cámara alcance su target, lo que se percibe como "el scroll responde lento/con gap". Compensar
   // con un lerp más agresivo por frame (12% vs 6%) cierra la distancia en menos frames.
@@ -1332,7 +1332,9 @@
   if(composer){
     composer.addPass(new RenderPass(scene,camera));
     if(TIER.bloom>0&&!new URLSearchParams(location.search).has('nobloom')){
-      composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),TIER.bloom,0.4,0.3));
+      // Umbral alto: sólo las partículas HDR y reflejos realmente luminosos florecen. El texto
+      // crema queda debajo y conserva su borde; con 0.3 el bloom lavaba cada línea de las placas.
+      composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),TIER.bloom,0.28,0.96));
     }
   // BUG real señalado por Agus con captura: los anillos/ticks/texto se ven pixelados, con bordes
   // dentados — `renderer:{antialias:true}` NO hace nada acá porque el render pasa por
