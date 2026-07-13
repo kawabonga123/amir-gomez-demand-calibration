@@ -452,3 +452,16 @@ Antes de la entrega final, Agus señaló que el glow de las placas lavaba el con
 - Mobile pequeño conserva render directo sin bloom y no cambia visualmente.
 
 Evidencia Playwright: desktop 1440×900 muestra títulos, labels y cuerpo con bordes equivalentes a la referencia `nobloom`, mientras el eje conserva brillo cálido. Mobile 375×812 mantiene la composición completa, overflow 0 y consola sin errores. Con CPU throttle 4×: p95 7,1 ms, 2 frames aislados >20 ms en 120 muestras y máximo 27,8 ms.
+
+## FROST TRANSMISIVO Y EJE CON PRESENCIA — 2026-07-13
+
+La reducción de bloom recuperó el borde de la tipografía, pero dejó las placas demasiado opacas y el eje casi apagado durante la lectura. La causa era tratar tres fenómenos distintos con un único dial: bloom de postproceso, transmisión del vidrio y luminancia propia del embudo.
+
+- La tipografía conserva material sólido y el bloom selectivo anterior; no vuelve a depender del fondo.
+- La opacidad base del vidrio baja a `0.38` en mobile y `0.44` en desktop. El peso del matcap también baja, por lo que el fondo real domina la superficie en lugar del tinte marrón.
+- El frost amplía el radio de sus cinco muestras y refuerza el fresnel. El espiral se ve desenfocado dentro de la placa y nítido fuera de ella: evidencia perceptual de vidrio, no una tarjeta transparente plana.
+- El tinte permanente baja y el borde aumenta levemente. La placa conserva volumen sin convertirse en un bloque de color.
+- Partículas e hilo mantienen un piso luminoso durante la lectura. Mobile suma un núcleo HDR local porque usa render directo; desktop conserva bloom sólo para los picos de partículas.
+- El tubo del eje pasa de `0.014` a `0.016`: presencia continua sin competir con los títulos.
+
+Evidencia Playwright: desktop 1440×900 y mobile 375×812 muestran transmisión, blur y eje cálido continuo; consola sin errores y sin overflow positivo. En mobile, 120 frames medidos: p50 6,9 ms, p95 7,1 ms, máximo 7,1 ms y 0 frames por encima de 20 ms.

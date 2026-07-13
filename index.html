@@ -862,11 +862,15 @@
         // (frostGlass samplea la escena de fondo — más brillo acá = más "vidrio esmerilado" real).
         // R>1.0 a propósito: con ACESFilmicToneMapping activo, valores HDR por encima de 1.0 son
         // los que el bloom engancha para dar el halo neón — en 1.0 exacto no había margen de sobra.
-        vec3 signalCol=vec3(${TIER.quality==='low'?'1.55,0.55,0.20':'1.35,0.46,0.16'});  // naranja HDR; mobile compensa la ausencia de bloom multipass
+        vec3 signalCol=vec3(${TIER.quality==='low'?'1.65,0.60,0.22':'1.45,0.49,0.17'});  // naranja HDR; mobile compensa la ausencia de bloom multipass
         vec3 col=mix(chaosCol,signalCol,vOrder);
         col+=vTwinkle*vec3(1.1,0.9,0.6);       // destello: pico HDR por encima de 1.0 (el bloom lo agarra), moderado
-        float readingFade=1.0-uReadFocus*${(TIER.quality==='low'?.38:.9).toFixed(2)};
-        gl_FragColor=vec4(col*readingFade, min(1.0,a+vTwinkle*0.3)*readingFade);
+        // El eje nunca desaparece durante la lectura: baja de jerarquia, pero conserva energia.
+        // Mobile no tiene bloom multipass, por eso suma un nucleo luminoso dentro de cada punto.
+        float readingFade=1.0-uReadFocus*${(TIER.quality==='low'?.2:.6).toFixed(2)};
+        float hotCore=smoothstep(0.22,0.0,d);
+        col+=hotCore*vec3(${TIER.quality==='low'?'0.72,0.34,0.15':'0.38,0.22,0.11'});
+        gl_FragColor=vec4(col*readingFade, min(1.0,a+hotCore*0.22+vTwinkle*0.3)*readingFade);
       }`});
   const points=new THREE.Points(geo,mat); scene.add(points);
 
@@ -901,10 +905,13 @@
     // GLSL ES exige el punto ("1.0") para literales float — "vec3 * 1" es un error de tipo que
     // aborta la compilación del shader ENTERO (nada se dibuja, sin error visible en consola JS,
     // solo un WebGL INVALID_OPERATION genérico). .toFixed(3) garantiza el punto siempre.
-    const matcapWeight=((opts&&opts.matcapWeight)||0.28).toFixed(3);
+    const matcapWeight=((opts&&opts.matcapWeight)||(TIER.quality==='low'?0.16:0.20)).toFixed(3);
     const neonStrength=((opts&&opts.neonStrength!=null)?opts.neonStrength:1).toFixed(3);
     const uHover={value:0};
-    const m=new THREE.MeshMatcapMaterial({matcap,color:0xffffff,transparent:true,opacity:0.6,depthWrite:false});
+    // La opacidad es la transmision final de la superficie, no el nivel de blur. Mantenerla por
+    // debajo de .55 deja leer el mundo a traves del vidrio sin convertir la placa en una tarjeta.
+    const m=new THREE.MeshMatcapMaterial({matcap,color:0xffffff,transparent:true,
+      opacity:TIER.quality==='low'?0.38:0.44,depthWrite:false});
     // El blur de 5 muestras (5 texture2D por píxel, en CADA placa) es el costo recurrente más
     // caro del frost — en tier bajo/mobile lo recortamos a 1 o 3 muestras armando el string del
     // shader distinto SEGÚN TIER.blurTaps (esto se decide una vez, al crear el material, no por frame).
@@ -948,19 +955,19 @@
         vec2 distortedUV=clamp(screenUV+(normal.xy+vec2(jHash-0.5)*${(TIER.quality==='low'?.06:.15).toFixed(3)})*distortAmt, 0.002, 0.998);
         // FROSTING real: blur de N muestras según tier (no un espejo nítido) — así se nota que hay
         // materia detrás sin poder leerla con nitidez, como vidrio esmerilado de verdad.
-        float blurAmt=${(TIER.quality==='low'?.018:.008).toFixed(3)}+fres*${(TIER.quality==='low'?.022:.01).toFixed(3)};
+        float blurAmt=${(TIER.quality==='low'?.036:.014).toFixed(3)}+fres*${(TIER.quality==='low'?.042:.018).toFixed(3)};
         ${behindCode}
         // Pedido de Agus: que las partículas/hilo REFRACTEN más a través del vidrio (más vívido,
         // no solo un tinte plano) — el vidrio ya deja pasar el fondo casi entero (matcapWeight
         // bajo), así que el lever real es la intensidad de lo que se ve DETRÁS, no la mezcla.
-        behind*=${(TIER.quality==='low'?1.62:1.3).toFixed(2)};
+        behind*=${(TIER.quality==='low'?1.56:1.42).toFixed(2)};
         vec3 outgoingLight=mix(behind, diffuseColor.rgb*matcapColor.rgb, ${matcapWeight});  // el fondo domina, difuminado
         // Boost de hover moderado (antes 1.4/0.65): el vidrio se volvía TAN brillante que su
         // brillo se filtraba a través del texto (casi-opaco desde el fix de arriba) y bajaba el
         // contraste igual — "más brillo, no más contraste" (feedback de Agus). Con el texto ya
         // opaco, este boost solo debe iluminar el VIDRIO, no competir con la letra.
-        outgoingLight+=fres*vec3(0.97,0.92,0.85)*(${(TIER.quality==='low'?.32:.22).toFixed(2)}+uHover*0.9);     // rim cálido (antes blanco-cian), se dispara al hover
-        outgoingLight+=uNeon*(${(TIER.quality==='low'?.16:.1).toFixed(2)}+uHover*0.45)*${neonStrength};          // tinte de etapa SIEMPRE presente, se dispara al hover
+        outgoingLight+=fres*vec3(0.97,0.92,0.85)*(${(TIER.quality==='low'?.38:.28).toFixed(2)}+uHover*0.9);     // rim cálido (antes blanco-cian), se dispara al hover
+        outgoingLight+=uNeon*(${(TIER.quality==='low'?.1:.075).toFixed(3)}+uHover*0.45)*${neonStrength};          // tinte de etapa SIEMPRE presente, se dispara al hover
         diffuseColor.a=mix(diffuseColor.a,0.92,uHover);                  // más opaca/visible al hover
         `
       );
@@ -1314,14 +1321,14 @@
       void main(){
         float dash=mix(0.38,step(0.5,fract(vUv.x*46.0-uTime*1.4)),${(TIER.quality==='low'?0:1).toFixed(1)});
         float ring=mix(0.10,step(0.82,fract(vUv.y*5.0+uTime*0.15)),${(TIER.quality==='low'?0:1).toFixed(1)});
-        float base=0.28;
-        float e=base+dash*0.55+ring*0.3;
+        float base=${(TIER.quality==='low'?.38:.32).toFixed(2)};
+        float e=base+dash*${(TIER.quality==='low'?.7:.62).toFixed(2)}+ring*0.3;
         vec3 col=mix(vec3(0.85,0.38,0.16),vec3(1.0,0.78,0.58),dash*0.7+ring*0.4);  // naranja de marca (antes cian)
-        float readingFade=1.0-uReadFocus*${(TIER.quality==='low'?.38:.9).toFixed(2)};
+        float readingFade=1.0-uReadFocus*${(TIER.quality==='low'?.2:.6).toFixed(2)};
         gl_FragColor=vec4(col*e*readingFade, clamp(e,0.12,0.85)*readingFade);
       }`
   });
-  const thread=new THREE.Mesh(new THREE.TubeGeometry(threadCurve,220,0.014,8,false),threadMat);
+  const thread=new THREE.Mesh(new THREE.TubeGeometry(threadCurve,220,0.016,8,false),threadMat);
   scene.add(thread);
 
   // Mobile usa una ruta directa y coherente: backdrop fresco + escena final en el mismo tick.
