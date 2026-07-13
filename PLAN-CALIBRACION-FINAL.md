@@ -465,3 +465,15 @@ La reducción de bloom recuperó el borde de la tipografía, pero dejó las plac
 - El tubo del eje pasa de `0.014` a `0.016`: presencia continua sin competir con los títulos.
 
 Evidencia Playwright: desktop 1440×900 y mobile 375×812 muestran transmisión, blur y eje cálido continuo; consola sin errores y sin overflow positivo. En mobile, 120 frames medidos: p50 6,9 ms, p95 7,1 ms, máximo 7,1 ms y 0 frames por encima de 20 ms.
+
+## HAZE TIPOGRÁFICO SELECTIVO + FROST DIFUSO — 2026-07-13
+
+La recuperación de legibilidad había llevado el sistema demasiado cerca de una tarjeta oscura plana: el texto ya no tenía la atmósfera anterior y el fondo atravesaba el vidrio con demasiada definición. La corrección separa nuevamente ambos fenómenos, sin volver al bloom global que lavaba el cuerpo.
+
+- Los títulos display reciben una segunda piel HDR independiente, apenas expandida y renderizada detrás del glifo sólido. Esa piel alimenta un haze crema ancho; la letra frontal conserva borde y contraste.
+- El haze se limita a títulos/números grandes. Eyebrows y cuerpo no participan, por lo que la lectura larga permanece nítida.
+- Desktop amplía el radio del bloom de `0,28` a `0,38`, manteniendo fuerza y threshold selectivo. No se vuelve a iluminar toda la placa.
+- El frost high pasa de cinco a nueve muestras, incorporando diagonales. Además comprime contraste, reduce saturación y suma un velo lechoso microtexturado: el eje sigue visible, pero pierde definición dentro del vidrio.
+- Mobile conserva render directo y cinco muestras; recibe una versión tenue del haze y mayor difusión material, sin sumar postprocesado.
+
+Evidencia Playwright: capturas 1440×900 y 375×812 confirman texto principal legible, cuerpo sin halo, partículas difusas dentro de las placas y nítidas fuera. Consola sin errores. El navegador automatizado limitó `requestAnimationFrame` en segundo plano, por lo que esta iteración no declara una nueva cifra de FPS; conserva el presupuesto estructural mobile y sólo cambia pesos/radios del mismo pase existente.

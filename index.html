@@ -917,15 +917,20 @@
     // shader distinto SEGÚN TIER.blurTaps (esto se decide una vez, al crear el material, no por frame).
     const taps=TIER.blurTaps;
     const behindCode = taps>=5 ? `
-        vec3 behind=texture2D(tBackdrop,distortedUV).rgb*0.28;
-        behind+=texture2D(tBackdrop,distortedUV+vec2(blurAmt,0.0)).rgb*0.18;
-        behind+=texture2D(tBackdrop,distortedUV-vec2(blurAmt,0.0)).rgb*0.18;
-        behind+=texture2D(tBackdrop,distortedUV+vec2(0.0,blurAmt)).rgb*0.18;
-        behind+=texture2D(tBackdrop,distortedUV-vec2(0.0,blurAmt)).rgb*0.18;
+        vec3 behind=texture2D(tBackdrop,distortedUV).rgb*0.08;
+        behind+=texture2D(tBackdrop,distortedUV+vec2(blurAmt,0.0)).rgb*0.13;
+        behind+=texture2D(tBackdrop,distortedUV-vec2(blurAmt,0.0)).rgb*0.13;
+        behind+=texture2D(tBackdrop,distortedUV+vec2(0.0,blurAmt)).rgb*0.13;
+        behind+=texture2D(tBackdrop,distortedUV-vec2(0.0,blurAmt)).rgb*0.13;
+        vec2 diagBlur=vec2(blurAmt*0.70);
+        behind+=texture2D(tBackdrop,distortedUV+diagBlur).rgb*0.10;
+        behind+=texture2D(tBackdrop,distortedUV-diagBlur).rgb*0.10;
+        behind+=texture2D(tBackdrop,distortedUV+vec2(diagBlur.x,-diagBlur.y)).rgb*0.10;
+        behind+=texture2D(tBackdrop,distortedUV+vec2(-diagBlur.x,diagBlur.y)).rgb*0.10;
     ` : taps>=3 ? `
-        vec3 behind=texture2D(tBackdrop,distortedUV).rgb*0.5;
-        behind+=texture2D(tBackdrop,distortedUV+vec2(blurAmt,0.0)).rgb*0.25;
-        behind+=texture2D(tBackdrop,distortedUV-vec2(blurAmt,0.0)).rgb*0.25;
+        vec3 behind=texture2D(tBackdrop,distortedUV).rgb*0.34;
+        behind+=texture2D(tBackdrop,distortedUV+vec2(blurAmt,0.0)).rgb*0.33;
+        behind+=texture2D(tBackdrop,distortedUV-vec2(blurAmt,0.0)).rgb*0.33;
     ` : `
         vec3 behind=texture2D(tBackdrop,distortedUV).rgb;
     `;
@@ -955,12 +960,18 @@
         vec2 distortedUV=clamp(screenUV+(normal.xy+vec2(jHash-0.5)*${(TIER.quality==='low'?.06:.15).toFixed(3)})*distortAmt, 0.002, 0.998);
         // FROSTING real: blur de N muestras según tier (no un espejo nítido) — así se nota que hay
         // materia detrás sin poder leerla con nitidez, como vidrio esmerilado de verdad.
-        float blurAmt=${(TIER.quality==='low'?.036:.014).toFixed(3)}+fres*${(TIER.quality==='low'?.042:.018).toFixed(3)};
+        float blurAmt=${(TIER.quality==='low'?.040:.018).toFixed(3)}+fres*${(TIER.quality==='low'?.046:.024).toFixed(3)};
         ${behindCode}
         // Pedido de Agus: que las partículas/hilo REFRACTEN más a través del vidrio (más vívido,
         // no solo un tinte plano) — el vidrio ya deja pasar el fondo casi entero (matcapWeight
         // bajo), así que el lever real es la intensidad de lo que se ve DETRÁS, no la mezcla.
         behind*=${(TIER.quality==='low'?1.56:1.42).toFixed(2)};
+        // Frost no es solo blur: comprime contraste y agrega un velo lechoso microtexturado.
+        // El objeto de fondo sigue presente, pero pierde definición y saturación dentro del vidrio.
+        float frostLuma=dot(behind,vec3(0.299,0.587,0.114));
+        behind=mix(behind,vec3(frostLuma)*vec3(1.08,0.99,0.91),${(TIER.quality==='low'?.42:.35).toFixed(2)});
+        float frostVeil=${(TIER.quality==='low'?.17:.15).toFixed(2)}+(jHash-0.5)*0.026;
+        behind=mix(behind,vec3(0.20,0.15,0.125),frostVeil);
         vec3 outgoingLight=mix(behind, diffuseColor.rgb*matcapColor.rgb, ${matcapWeight});  // el fondo domina, difuminado
         // Boost de hover moderado (antes 1.4/0.65): el vidrio se volvía TAN brillante que su
         // brillo se filtraba a través del texto (casi-opaco desde el fix de arriba) y bajaba el
@@ -1103,6 +1114,21 @@
   const DISPLAY_TEXT_CURVES=TIER.quality==='low'?4:14;
   const DISPLAY_TEXT_BEVEL=TIER.quality!=='low';
   new FontLoader().load('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/fonts/helvetiker_bold.typeface.json', (font)=>{
+  // Haze selectivo: la letra frontal sigue siendo MeshBasic sólido y perfectamente legible.
+  // Esta segunda piel vive detrás, se expande apenas y sólo ella alimenta el bloom en desktop.
+  // En mobile, donde no hay postproceso, queda como un velo aditivo mucho más tenue.
+  function addTextHaze(parent,source){
+    const hazeColor=new THREE.Color();
+    hazeColor.setRGB(...(TIER.quality==='low'?[0.95,0.82,0.68]:[3.2,2.8,2.45]));
+    const hazeMat=new THREE.MeshBasicMaterial({color:hazeColor,toneMapped:false,transparent:true,
+      opacity:TIER.quality==='low'?0.06:0.22,blending:THREE.AdditiveBlending,
+      depthWrite:false,depthTest:false});
+    const haze=new THREE.Mesh(source.geometry,hazeMat);
+    haze.position.copy(source.position); haze.rotation.copy(source.rotation); haze.scale.copy(source.scale);
+    haze.scale.multiplyScalar(TIER.quality==='low'?1.008:1.003);
+    haze.renderOrder=1; source.renderOrder=2;
+    parent.add(haze);
+  }
   // Wrap de texto REAL (no a ojo por cantidad de caracteres): arma cada línea agregando palabras
   // hasta que la geometría medida (bounding box) se pasa del ancho disponible, recién ahí corta.
   // Precisa porque usa la MISMA fuente/tamaño que se va a dibujar — nunca desborda el panel.
@@ -1200,6 +1226,7 @@
         if(w>maxW) mesh.scale.setScalar(maxW/w);
         mesh.position.set(0, titleTopY+totalH/2-li*lineHeight, 0.15);   // apenas saliente de la cara del vidrio
         plate.add(mesh);
+        addTextHaze(plate,mesh);
       });
       // Eyebrow ("Step 0N") + cuerpo (caption completo, wrappeado de verdad) — AMBOS geometría 3D,
       // hijos de la MISMA placa: una sola pieza, sin DOM, sin poder desincronizarse nunca.
@@ -1229,6 +1256,7 @@
       if(w>maxW) mesh.scale.setScalar(maxW/w);
       mesh.position.set(0,0.62,0.15);      // arriba, deja lugar real debajo para tema+nombre+caption
       plate.add(mesh);
+      addTextHaze(plate,mesh);
       addTextLines(plate, eyebrowTextMat, [`${c.theme} — ${c.name}`], 0.115, 0, 0.1, PAIR_SIDE?2.15:3.6, 0.15);
       const bodyLines=wrapText(c.caption, 0.13, PAIR_SIDE?2.15:3.6);
       addTextLines(plate, bodyTextMat, bodyLines, 0.13, 0.195, -0.2, PAIR_SIDE?2.15:3.6, 0.15);
@@ -1256,6 +1284,7 @@
       if(w>maxW) mesh.scale.setScalar(maxW/w);
       mesh.position.z=0.05;   // apenas adelante del plano del anillo/ticks
       group.add(mesh);
+      addTextHaze(group,mesh);
       // eyebrow+caption geometría 3D, hijos del group EXTERIOR (no del sub-group `spin` que gira)
       // — debajo del anillo, mismo criterio que Method/Work. Tamaño compacto: el presupuesto
       // vertical hasta la placa de Method vecina ya está ajustado (ver gap de STAGES arriba),
@@ -1341,7 +1370,9 @@
     if(TIER.bloom>0&&!new URLSearchParams(location.search).has('nobloom')){
       // Umbral alto: sólo las partículas HDR y reflejos realmente luminosos florecen. El texto
       // crema queda debajo y conserva su borde; con 0.3 el bloom lavaba cada línea de las placas.
-      composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),TIER.bloom,0.28,0.96));
+      // Radio algo mas amplio, fuerza contenida: convierte la piel HDR de los titulos en haze
+      // atmosferico sin volver a iluminar toda la placa ni sacrificar el borde legible.
+      composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),TIER.bloom,0.38,0.96));
     }
   // BUG real señalado por Agus con captura: los anillos/ticks/texto se ven pixelados, con bordes
   // dentados — `renderer:{antialias:true}` NO hace nada acá porque el render pasa por
